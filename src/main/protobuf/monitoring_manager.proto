@@ -1,0 +1,39 @@
+syntax = "proto3";
+
+package monitoring_manager;
+
+service DataStorageService {
+  rpc GetDataUpdates (GetDataUpdatesRequest) returns (stream GetDataUpdatesResponse);
+  rpc GetModelFiles (GetModelFilesRequest) returns (GetModelFilesResponse);
+}
+
+// === GetDataUpdates ===
+message GetDataUpdatesRequest {
+  ObjectType sub_type = 1;
+}
+message GetDataUpdatesResponse {
+  string object_key = 1;
+  ObjectType sub_type = 2;
+  string model_name = 3;
+  uint64 model_version = 4;
+  string signature = 5; //TODO(bulat): replace string with ModelSignature
+}
+
+// === GetModelFiles ===
+message GetModelFilesRequest {
+  ObjectType files_type = 1;
+  string model_name = 2;
+  uint64 model_version = 3;
+}
+
+message GetModelFilesResponse {
+  repeated string object_keys = 1;
+}
+
+// === Entities ===
+enum ObjectType {
+  CUSTOM = 0; // for files that are not training or inference data
+  TRAINING = 1; // training-data files
+  INFERENCE = 2; // inference-data files
+  ALL = 3; // send everything
+}
