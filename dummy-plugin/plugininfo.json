@@ -1,8 +1,0 @@
-{
-  "iconUrl": "/icon.png",
-  "routePath": "routePath",
-  "ngModuleName": "ngModuleName",
-  "remoteEntry": "remoteEntry",
-  "remoteName": "remoteName",
-  "exposedModule": "exposedModule"
-}

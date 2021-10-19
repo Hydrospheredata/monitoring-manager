@@ -10,7 +10,7 @@ import zio.test.Assertion._
 object DataMonitorITSpec extends GenericIntegrationTest {
   override def spec = suite("DataMonitorITSpec") {
     testM("should list minio objects") {
-      val config = Layers.aws
+      val config = Layers.s3Client
       val mon    = DataMonitor("test-bucket", Some("prefix"))
       val effect = mon.start
         .provideLayer(config ++ Layers.logger)

@@ -1,6 +1,11 @@
-CREATE TABLE hydrosphere.index (
-  objectKey TEXT NOT NULL,
-  lastObjectCreated TIMESTAMP WITH TIME ZONE NOT NULL
+CREATE TABLE hydrosphere.model(
+    name VARCHAR(256) NOT NULL,
+    version NUMERIC NOT NULL,
+    PRIMARY KEY (name, version),
+    signature TEXT NOT NULL,
+    metadata TEXT NOT NULL,
+    trainingDataPrefix TEXT,
+    inferenceDataPrefix TEXT
 );
 
 CREATE TABLE hydrosphere.plugin(

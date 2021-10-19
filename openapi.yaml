@@ -1,0 +1,198 @@
+openapi: 3.0.3
+info:
+  title: Monitoring manager
+  version: v1
+paths:
+  /api/v1/plugin:
+    get:
+      tags:
+      - Plugin
+      description: List all registered plugins
+      operationId: pluginList
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Plugin'
+        default:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+    post:
+      tags:
+      - Plugin
+      description: Register a new plugin
+      operationId: pluginAdd
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Plugin'
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Plugin'
+        '400':
+          description: 'Invalid value for: body'
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/v1/model:
+    get:
+      tags:
+      - Model
+      description: List all registered models
+      operationId: modelList
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Model'
+        default:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+    post:
+      tags:
+      - Model
+      description: Register new model
+      operationId: modelAdd
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Model'
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Model'
+        '400':
+          description: 'Invalid value for: body'
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+components:
+  schemas:
+    Field:
+      required:
+      - name
+      - dtype
+      - profile
+      type: object
+      properties:
+        name:
+          type: string
+        shape:
+          type: array
+          items:
+            type: integer
+            format: int64
+        dtype:
+          type: string
+        profile:
+          type: string
+    Map_String:
+      type: object
+      additionalProperties:
+        type: string
+    Model:
+      required:
+      - name
+      - version
+      - signature
+      - metadata
+      type: object
+      properties:
+        name:
+          type: string
+        version:
+          type: integer
+          format: int64
+        signature:
+          $ref: '#/components/schemas/Signature'
+        metadata:
+          $ref: '#/components/schemas/Map_String'
+        trainingDataPrefix:
+          type: string
+        inferenceDataPrefix:
+          type: string
+    Plugin:
+      required:
+      - name
+      - description
+      type: object
+      properties:
+        name:
+          type: string
+        description:
+          type: string
+        pluginInfo:
+          $ref: '#/components/schemas/PluginInfo'
+    PluginInfo:
+      required:
+      - iconUrl
+      - routePath
+      - ngModuleName
+      - remoteEntry
+      - remoteName
+      - exposedModule
+      type: object
+      properties:
+        iconUrl:
+          type: string
+        routePath:
+          type: string
+        ngModuleName:
+          type: string
+        remoteEntry:
+          type: string
+        remoteName:
+          type: string
+        exposedModule:
+          type: string
+    Signature:
+      type: object
+      properties:
+        inputs:
+          type: array
+          items:
+            $ref: '#/components/schemas/Field'
+        output:
+          type: array
+          items:
+            $ref: '#/components/schemas/Field'
+

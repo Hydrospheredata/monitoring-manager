@@ -8,5 +8,5 @@ import zio.ZIO
 class DatabaseContext extends PostgresZioJdbcContext(Literal)
 
 object DatabaseContext {
-  def layer = ZIO.succeed(new DatabaseContext()).toLayer
+  val layer = ZIO.succeed(new DatabaseContext()).toLayer
 }

@@ -18,7 +18,7 @@ object FlywayClient {
   def makeJavaClient(dataSource: DataSource): Task[Flyway] =
     ZIO.effect(Flyway.configure().dataSource(dataSource).schemas("hydrosphere").load())
 
-  def layer: ZLayer[Has[CloseableDataSource], Throwable, Has[FlywayClient]] =
+  val layer: ZLayer[Has[CloseableDataSource], Throwable, Has[FlywayClient]] =
     ZIO
       .environment[Has[CloseableDataSource]]
       .flatMap(x => makeJavaClient(x.get[CloseableDataSource]))

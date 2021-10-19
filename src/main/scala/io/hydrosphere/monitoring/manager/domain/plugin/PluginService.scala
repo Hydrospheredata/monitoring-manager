@@ -1,7 +1,5 @@
 package io.hydrosphere.monitoring.manager.domain.plugin
 
-import io.hydrosphere.monitoring.manager.api.http.CreatePluginRequest
-import io.hydrosphere.monitoring.manager.domain.clouddriver.CloudDriver
 import zio.{Has, ZIO}
 
 object PluginService {
@@ -10,46 +8,20 @@ object PluginService {
 
   case class PluginNotFoundError(pluginName: String) extends Error(s"Can't find plugin $pluginName")
 
-  /** Create new Plugin instance and add it to the persistence storage. Fails if there is a plugin
-    * with the same name.
+  /** Create new Plugin instance and add it to the persistence storage. Updates plugin if there is
+    * already one.
     *
     * @param pluginRequest
     *   @return
     */
-  def register(pluginRequest: CreatePluginRequest): ZIO[Has[PluginRepository], Throwable, Plugin] =
+  def register(plugin: Plugin): ZIO[Has[PluginRepository], Throwable, Plugin] =
     for {
-      exPlugin <- PluginRepository.get(pluginRequest.name)
-      _ <- exPlugin match {
-        case Some(value) => ZIO.fail(PluginAlreadyExistsError(value.name))
-        case None        => ZIO.succeed(())
+      exPlugin <- PluginRepository.get(plugin.name)
+      result <- exPlugin match {
+        case Some(_) =>
+          PluginRepository.update(plugin)
+        case None =>
+          PluginRepository.insert(plugin)
       }
-      newPlugin = Plugin(
-        pluginRequest.name,
-        pluginRequest.image,
-        pluginRequest.depConfigName,
-        pluginRequest.description,
-        Plugin.Status.Inactive,
-        pluginInfo = None
-      )
-      result <- PluginRepository.insert(newPlugin)
     } yield result
-
-  /** Creates an instance for the plugin and returns Service object that describes it.
-    *
-    * @param name
-    *   @return
-    */
-  def activate(name: String) =
-    for {
-      plugin <- PluginRepository
-        .get(name)
-        .flatMap {
-          case Some(value) => ZIO.succeed(value)
-          case None        => ZIO.fail(PluginNotFoundError(name))
-        }
-      service    <- CloudDriver.createService(plugin.name, plugin.image, plugin.depConfigName)
-      pluginInfo <- PluginInfo.getPluginInfo(service.uri)
-      updatedPlugin = plugin.copy(pluginInfo = Some(pluginInfo), status = Plugin.Status.Active)
-      _ <- PluginRepository.update(updatedPlugin)
-    } yield updatedPlugin
 }
