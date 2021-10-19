@@ -42,11 +42,15 @@ object PluginServiceSpec extends GenericUnitTest {
           PluginRepository.PluginRepositoryMock
             .Get(equalTo(plugin.name), value(Some(plugin)))
             .atMost(1)
-            .atLeast(1)
+            .atLeast(1) &&
+            PluginRepository.PluginRepositoryMock
+              .Update(equalTo(plugin), value(plugin))
+              .atMost(1)
+              .atLeast(1)
         val effect = PluginService
           .register(plugin)
           .provideLayer(pluginRepoMock.toLayer)
-        assertM(effect.flip)(equalTo(PluginAlreadyExistsError(plugin.name)))
+        assertM(effect)(equalTo(plugin))
       }
     )
   )
