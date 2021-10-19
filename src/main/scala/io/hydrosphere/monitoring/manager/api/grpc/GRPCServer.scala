@@ -1,20 +1,20 @@
 package io.hydrosphere.monitoring.manager.api.grpc
 
 import io.grpc.netty.NettyServerBuilder
+import io.grpc.protobuf.services.ProtoReflectionService
 import io.hydrosphere.monitoring.manager.EndpointConfig
-import io.hydrosphere.monitoring.manager.domain.data.InferenceSubscriptionService
-import io.hydrosphere.monitoring.manager.domain.model.{ModelRepository, ModelSubscriptionManager}
 import io.hydrosphere.monitoring.manager.Layers.AppEnv
 import scalapb.zio_grpc.{Server, ServerLayer}
 import zio.{Has, ZIO, ZManaged}
-import zio.logging.{log, Logger}
+import zio.logging.log
 
 object GRPCServer {
   val serverLayer = for {
     grpcPortHas <- ZIO.access[Has[EndpointConfig]](_.get.grpcPort).toLayer
     grpcPort = grpcPortHas.get
+    builder  = NettyServerBuilder.forPort(grpcPort).addService(ProtoReflectionService.newInstance())
     server <- ServerLayer
-      .fromServiceLayer(NettyServerBuilder.forPort(grpcPort))(
+      .fromServiceLayer(builder)(
         DataStorageServiceImpl.layer ++ ModelCatalogServiceImpl.layer
       )
       .tap(_ => log.info(s"Starting GRPC server at $grpcPort port"))

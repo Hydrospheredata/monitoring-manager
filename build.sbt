@@ -18,3 +18,5 @@ enablePlugins(DockerPlugin)
 
 lazy val openapi = TaskKey[Unit]("openapi", "Generates OpenAPI documentation")
 openapi := (Compile / runMain).toTask(" io.hydrosphere.monitoring.manager.MkDocs").value
+
+Compile / mainClass := Some("io.hydrosphere.monitoring.manager.Main")

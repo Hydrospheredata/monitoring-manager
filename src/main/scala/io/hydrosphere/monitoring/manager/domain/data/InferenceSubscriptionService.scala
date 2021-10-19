@@ -27,7 +27,7 @@ case class InferenceSubscriptionService(
     val f = for {
       hub    <- get.orElse(create)
       _      <- log.debug("Hub acquired")
-      stream <- ZIO.apply(ZStream.fromHub(hub))
+      stream <- ZIO.apply(ZStream.fromHub(hub).forever)
       _      <- log.debug("Subscription stream from hub")
       fbr <- startMonitoring(pluginId, path, hub)
         .tapError(err => log.throwable("Error while fetching objects from S3", err))
