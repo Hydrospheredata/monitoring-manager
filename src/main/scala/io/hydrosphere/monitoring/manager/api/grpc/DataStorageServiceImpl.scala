@@ -40,7 +40,7 @@ final case class DataStorageServiceImpl(
                   )
                 ),
                 signature = Some(model.signature.toProto),
-                inferenceDataObjs = obj.keyValue.toSeq
+                inferenceDataObjs = Seq(obj.fullPath.toString())
               )
             }
             .provide(Has(log) ++ env ++ Has(subscriptionManager) ++ Has(modelRepository))

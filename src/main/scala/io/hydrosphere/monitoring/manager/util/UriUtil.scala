@@ -1,6 +1,7 @@
 package io.hydrosphere.monitoring.manager.util
 
 import io.circe.{Decoder, Encoder}
+import io.github.vigoo.zioaws.s3.model.S3Object
 import sttp.model.{QueryParams, Uri}
 import sttp.model.Uri.QuerySegment
 import sttp.model.Uri.QuerySegment.{KeyValue, Value}
@@ -8,6 +9,9 @@ import sttp.model.Uri.QuerySegment.{KeyValue, Value}
 import scala.collection.immutable.Seq
 
 object UriUtil {
+  def s3Path(bucket: String, s3Key: String) =
+    Uri.apply(scheme = "s3", host = bucket, path = s3Key.split("/"))
+
   def combine(baseUri: Uri, segment: Uri): Uri =
     baseUri.addPathSegments(segment.pathSegments.segments)
 

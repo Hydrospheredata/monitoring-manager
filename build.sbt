@@ -20,3 +20,5 @@ lazy val openapi = TaskKey[Unit]("openapi", "Generates OpenAPI documentation")
 openapi := (Compile / runMain).toTask(" io.hydrosphere.monitoring.manager.MkDocs").value
 
 Compile / mainClass := Some("io.hydrosphere.monitoring.manager.Main")
+
+addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")

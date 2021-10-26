@@ -17,6 +17,6 @@ object DataService {
     for {
       subManager <- ZStream.service[InferenceSubscriptionService]
       hub        <- ZStream.fromEffect(subManager.subscribe(pluginId))
-      stream     <- ZStream.fromHub(hub)
-    } yield stream
+      data       <- ZStream.fromHub(hub)
+    } yield data
 }

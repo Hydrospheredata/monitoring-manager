@@ -53,7 +53,7 @@ case class InferenceSubscriptionService(
 }
 
 object InferenceSubscriptionService {
-  type S3Data = (Model, S3Object.ReadOnly)
+  type S3Data = (Model, S3Obj)
 
   def make(
       s3Client: S3Client,

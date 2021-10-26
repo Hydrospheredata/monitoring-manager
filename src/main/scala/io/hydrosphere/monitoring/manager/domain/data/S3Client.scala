@@ -1,14 +1,13 @@
 package io.hydrosphere.monitoring.manager.domain.data
 
 import io.github.vigoo.zioaws.s3
-import io.github.vigoo.zioaws.s3.model.S3Object
 import io.github.vigoo.zioaws.s3.S3
 import sttp.model.Uri
 import zio._
 import zio.stream.ZStream
 
 trait S3Client {
-  def getPrefixData(prefix: Uri): ZStream[Any, Throwable, S3Object.ReadOnly]
+  def getPrefixData(prefix: Uri): ZStream[Any, Throwable, S3Obj]
 }
 
 object S3Client {
@@ -22,7 +21,10 @@ object S3Client {
         bucket = bucket,
         prefix = Some(strPrefix)
       )
-      data <- s3Client.listObjectsV2(request).mapError(_.toThrowable)
+      data <- s3Client
+        .listObjectsV2(request)
+        .mapBoth(_.toThrowable, x => S3Obj.fromObj(bucket, x))
+        .collect { case Some(obj) => obj }
     } yield data
   }
 
