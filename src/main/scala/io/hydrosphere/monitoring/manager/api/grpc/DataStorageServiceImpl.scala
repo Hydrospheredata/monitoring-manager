@@ -11,7 +11,6 @@ import zio.stream.{ZSink, ZStream}
 import zio.logging.{log, Logger}
 import zio._
 
-//NB(bulat): Extend DataStorageService because we don't need extra GRPC context. Yet.
 final case class DataStorageServiceImpl(
     log: Logger[String],
     env: ZEnv,
@@ -56,7 +55,9 @@ final case class DataStorageServiceImpl(
 }
 
 object DataStorageServiceImpl {
-  val layer = (for {
+  val layer: ZLayer[Has[ModelRepository] with Has[InferenceSubscriptionService] with Has[
+    Logger[String]
+  ] with zio.ZEnv, Nothing, Has[DataStorageService]] = (for {
     env                 <- ZIO.environment[ZEnv]
     log                 <- ZIO.service[Logger[String]]
     subscriptionManager <- ZIO.service[InferenceSubscriptionService]

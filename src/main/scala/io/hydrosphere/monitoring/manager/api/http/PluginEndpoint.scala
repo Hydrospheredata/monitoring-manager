@@ -1,22 +1,36 @@
 package io.hydrosphere.monitoring.manager.api.http
 
 import io.hydrosphere.monitoring.manager.domain.plugin._
-import sttp.client3.asynchttpclient.zio.SttpClient
-import sttp.tapir.server.ziohttp.{ZioHttpInterpreter, ZioHttpServerOptions}
-import sttp.tapir.ztapir._
+import io.hydrosphere.monitoring.manager.EndpointConfig
 import zio._
 
 case class PluginEndpoint(
-    pluginRepo: Has[PluginRepository],
-    backend: SttpClient,
-    zenv: ZEnv
+    pluginRepo: PluginRepository,
+    endpointConfig: EndpointConfig
 ) extends GenericEndpoint {
 
+  val pluginAdd = PluginEndpoint.pluginAddDesc
+    .serverLogic[Task](request =>
+      PluginService.register(request).provide(Has(pluginRepo) ++ Has(endpointConfig)).either
+    )
+
+  val pluginList = PluginEndpoint.pluginListDesc
+    .serverLogic[Task](_ =>
+      pluginRepo
+        .all()
+        .runCollect
+        .either
+    )
+
+  val serverEndpoints = List(pluginAdd, pluginList)
+}
+
+object PluginEndpoint extends GenericEndpoint {
   val pluginEndpoint = v1Endpoint
     .in("plugin")
     .tag("Plugin")
 
-  val pluginAdd =
+  val pluginAddDesc =
     pluginEndpoint
       .name("pluginAdd")
       .description("Register a new plugin")
@@ -24,29 +38,15 @@ case class PluginEndpoint(
       .in(jsonBody[Plugin])
       .out(jsonBody[Plugin])
       .errorOut(throwableBody)
-      .serverLogic[Task](request => PluginService.register(request).provide(pluginRepo).either)
 
-  val pluginList = pluginEndpoint
+  val pluginListDesc = pluginEndpoint
     .name("pluginList")
     .description("List all registered plugins")
     .get
     .out(jsonBody[Seq[Plugin]])
     .errorOut(throwableBody)
-    .serverLogic[Task](_ =>
-      PluginRepository
-        .all()
-        .runCollect
-        .provide(pluginRepo)
-        .either
-    )
 
-  val endpoints = List(pluginAdd, pluginList)
-}
+  val endpoints = List(pluginListDesc, pluginAddDesc)
 
-object PluginEndpoint {
-  def layer = (for {
-    pluginRepo <- ZIO.environment[Has[PluginRepository]]
-    zioSttp    <- ZIO.environment[SttpClient]
-    zEnv       <- ZIO.environment[ZEnv]
-  } yield PluginEndpoint(pluginRepo, zioSttp, zEnv)).toLayer
+  def layer = (PluginEndpoint.apply _).toLayer
 }

@@ -2,7 +2,7 @@ import sbt._
 
 object Dependencies {
   final val zioVersion        = "1.0.12"
-  final val zioAwsVersion     = "3.17.56.1"
+  final val zioAwsVersion     = "3.17.61.1"
   final val zioConfigVersion  = "1.0.10"
   final val log4jVersion      = "2.14.1"
   final val doobieVersion     = "1.0.0-M5"
@@ -11,6 +11,7 @@ object Dependencies {
   final val zioLogVersion     = "0.5.12"
   final val enumeratumVersion = "1.7.0"
   final val sttpVersion       = "3.3.15"
+  final val monocleVersion    = "3.1.0"
 
   final val api = Seq(
     "io.grpc"               % "grpc-netty"           % scalapb.compiler.Version.grpcJavaVersion,
@@ -37,7 +38,6 @@ object Dependencies {
     "com.zaxxer"       % "HikariCP"       % "3.4.5"
   )
 
-  //TODO(bulat): update to zio 2 as soon as scalapb supports it
   final val effect = Seq(
     "dev.zio" %% "zio"         % zioVersion,
     "dev.zio" %% "zio-streams" % zioVersion,
@@ -59,7 +59,9 @@ object Dependencies {
     "com.spotify"   % "docker-client"    % "8.16.0" exclude ("ch.qos.logback", "logback-classic"),
     "com.beachape" %% "enumeratum"       % enumeratumVersion,
     "com.beachape" %% "enumeratum-circe" % enumeratumVersion,
-    "com.beachape" %% "enumeratum-quill" % enumeratumVersion
+    "com.beachape" %% "enumeratum-quill" % enumeratumVersion,
+    "dev.optics"   %% "monocle-core"     % monocleVersion,
+    "dev.optics"   %% "monocle-macro"    % monocleVersion
   )
 
   final val test = Seq(

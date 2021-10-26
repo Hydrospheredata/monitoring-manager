@@ -4,14 +4,21 @@ import io.github.vigoo.zioaws.core.config.CommonAwsConfig
 import io.github.vigoo.zioaws.core.config.descriptors.commonAwsConfig
 import zio.config._
 import ConfigDescriptor._
+import io.hydrosphere.monitoring.manager.util.URI
+import zio.{system, Has, ZIO, ZLayer}
 import zio.config.magnolia.descriptor
 import zio.config.typesafe.TypesafeConfigSource
-import zio.{system, Has, ZIO, ZLayer}
 
 case class EndpointConfig(
+    httpHost: java.net.URI,
     httpPort: Int,
     grpcPort: Int
-)
+) {
+  lazy val httpUri = {
+    val parsedUri = sttp.model.Uri(httpHost)
+    URI(parsedUri.port(httpPort))
+  }
+}
 
 object Config {
 

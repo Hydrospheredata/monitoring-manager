@@ -70,13 +70,16 @@ service PluginManagementService {
 
 message RegisterPluginRequest {
   string plugin_id = 1;
-  string iconUrl = 2;
+  // PLUGIN FRONTEND FIELDS
+//  string iconUrl = 2;
   string description = 3;
   string routePath = 5;
   string ngModuleName = 6;
-  string remoteEntry = 7;
+//  string remoteEntry = 7;
   string remoteName = 8;
   string exposedModule = 9;
+  // END OF PLUGIN FRONTEND FIELDS
+  string addr = 10;
 }
 
 message RegisterPluginResponse {

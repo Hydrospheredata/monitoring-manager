@@ -56,11 +56,6 @@ final case class ModelRepositoryImpl(
   import ctx._
   final private val hasDS = Has(dataSource)
 
-  implicit private val uriDecoder = MappedEncoding[Uri, String](_.toString())
-  implicit private val uriEncoder = MappedEncoding[String, Uri](x =>
-    Uri.parse(x).fold(err => throw new IllegalArgumentException(err), identity)
-  )
-
   implicit private val mapDecoder = QuillJson.jsonDecoder[Map[String, String]]
   implicit private val mapEncoder = QuillJson.jsonEncoder[Map[String, String]]
 

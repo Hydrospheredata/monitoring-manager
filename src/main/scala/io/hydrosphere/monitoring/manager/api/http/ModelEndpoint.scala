@@ -1,22 +1,13 @@
 package io.hydrosphere.monitoring.manager.api.http
 
 import io.hydrosphere.monitoring.manager.domain.model._
-import sttp.tapir.ztapir._
 import zio._
 
 case class ModelEndpoint(
     modelRepo: ModelRepository
 ) extends GenericEndpoint {
-  val modelEndpoint = v1Endpoint
-    .in("model")
-    .tag("Model")
 
-  val modelList = modelEndpoint
-    .name("modelList")
-    .description("List all registered models")
-    .get
-    .out(jsonBody[Seq[Model]])
-    .errorOut(throwableBody)
+  val modelList = ModelEndpoint.modelListDesc
     .serverLogic[Task](_ =>
       modelRepo
         .all()
@@ -25,13 +16,7 @@ case class ModelEndpoint(
     )
 
   val modelAdd =
-    modelEndpoint
-      .name("modelAdd")
-      .description("Register new model")
-      .in(jsonBody[Model])
-      .post
-      .out(jsonBody[Model])
-      .errorOut(throwableBody)
+    ModelEndpoint.modelAddDesc
       .serverLogic[Task](model =>
         ModelService
           .registerModel(model)
@@ -39,9 +24,30 @@ case class ModelEndpoint(
           .either
       )
 
-  val endpoints = List(modelList, modelAdd)
+  val serverEndpoints = List(modelList, modelAdd)
 }
 
-object ModelEndpoint {
+object ModelEndpoint extends GenericEndpoint {
+  val modelEndpoint = v1Endpoint
+    .in("model")
+    .tag("Model")
+
+  val modelListDesc = modelEndpoint
+    .name("modelList")
+    .description("List all registered models")
+    .get
+    .out(jsonBody[Seq[Model]])
+    .errorOut(throwableBody)
+
+  val modelAddDesc = modelEndpoint
+    .name("modelAdd")
+    .description("Register new model")
+    .in(jsonBody[Model])
+    .post
+    .out(jsonBody[Model])
+    .errorOut(throwableBody)
+
+  val endpoints = List(modelListDesc, modelAddDesc)
+
   val layer = (ModelEndpoint.apply _).toLayer
 }

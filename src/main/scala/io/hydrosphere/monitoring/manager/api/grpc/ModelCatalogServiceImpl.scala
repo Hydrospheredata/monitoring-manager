@@ -28,5 +28,6 @@ final case class ModelCatalogServiceImpl(modelSubscriptionManager: ModelSubscrip
 }
 
 object ModelCatalogServiceImpl {
-  val layer = (ModelCatalogServiceImpl.apply _).toLayer
+  val layer: URLayer[Has[ModelSubscriptionManager], Has[ModelCatalogService]] =
+    (ModelCatalogServiceImpl.apply _).toLayer
 }

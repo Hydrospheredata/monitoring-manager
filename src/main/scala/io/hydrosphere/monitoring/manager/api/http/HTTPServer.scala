@@ -10,8 +10,11 @@ object HTTPServer {
   def routes = for {
     pluginEndpoint <- ZIO.service[PluginEndpoint]
     modelEndpoint  <- ZIO.service[ModelEndpoint]
+    proxyEndpoint  <- ZIO.service[PluginProxyEndpoint]
     routes = ZioHttpInterpreter()
-      .toHttp(pluginEndpoint.endpoints ++ modelEndpoint.endpoints)
+      .toHttp(
+        pluginEndpoint.serverEndpoints ++ modelEndpoint.serverEndpoints ++ proxyEndpoint.serverEndpoints
+      )
   } yield routes
 
   def start =

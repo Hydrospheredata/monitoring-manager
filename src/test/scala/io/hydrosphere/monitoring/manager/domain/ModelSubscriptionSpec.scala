@@ -1,8 +1,9 @@
 package io.hydrosphere.monitoring.manager.domain
 
-import io.hydrosphere.monitoring.manager.GenericUnitTest
+import io.hydrosphere.monitoring.manager.{util, GenericUnitTest}
 import io.hydrosphere.monitoring.manager.domain.contract.Signature
 import io.hydrosphere.monitoring.manager.domain.model._
+import io.hydrosphere.monitoring.manager.util.URI
 import sttp.client3._
 import zio.{ZHub, ZQueue}
 import zio.stream.ZStream
@@ -23,16 +24,16 @@ object ModelSubscriptionSpec extends GenericUnitTest {
           version = 1,
           signature = Signature(Seq.empty, Seq.empty),
           metadata = Map.empty,
-          trainingDataPrefix = Some(URI(uri"s3://bucket/")),
-          inferenceDataPrefix = Some(URI(uri"s3://bucket2/"))
+          trainingDataPrefix = Some(util.URI(uri"s3://bucket/")),
+          inferenceDataPrefix = Some(util.URI(uri"s3://bucket2/"))
         ),
         Model(
           name = "b",
           version = 1,
           signature = Signature(Seq.empty, Seq.empty),
           metadata = Map.empty,
-          trainingDataPrefix = Some(URI(uri"s3://bucket3/")),
-          inferenceDataPrefix = Some(URI(uri"s3://bucket4/"))
+          trainingDataPrefix = Some(util.URI(uri"s3://bucket3/")),
+          inferenceDataPrefix = Some(util.URI(uri"s3://bucket4/"))
         )
       )
       val repoMockLayer = ModelRepository.ModelRepositoryMock
@@ -59,16 +60,16 @@ object ModelSubscriptionSpec extends GenericUnitTest {
           version = 1,
           signature = Signature(Seq.empty, Seq.empty),
           metadata = Map.empty,
-          trainingDataPrefix = Some(URI(uri"s3://bucket/")),
-          inferenceDataPrefix = Some(URI(uri"s3://bucket2/"))
+          trainingDataPrefix = Some(util.URI(uri"s3://bucket/")),
+          inferenceDataPrefix = Some(util.URI(uri"s3://bucket2/"))
         ),
         Model(
           name = "b",
           version = 1,
           signature = Signature(Seq.empty, Seq.empty),
           metadata = Map.empty,
-          trainingDataPrefix = Some(URI(uri"s3://bucket3/")),
-          inferenceDataPrefix = Some(URI(uri"s3://bucket4/"))
+          trainingDataPrefix = Some(util.URI(uri"s3://bucket3/")),
+          inferenceDataPrefix = Some(util.URI(uri"s3://bucket4/"))
         )
       )
       val newModel = Model(
@@ -77,7 +78,7 @@ object ModelSubscriptionSpec extends GenericUnitTest {
         signature = Signature(Seq.empty, Seq.empty),
         metadata = Map.empty,
         trainingDataPrefix = Some(URI(uri"s3://bucket3/")),
-        inferenceDataPrefix = Some(URI(uri"s3://bucket4/"))
+        inferenceDataPrefix = Some(util.URI(uri"s3://bucket4/"))
       )
       val expected = models + newModel
       val repoMockLayer =
