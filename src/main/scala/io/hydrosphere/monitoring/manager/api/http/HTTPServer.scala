@@ -1,20 +1,26 @@
 package io.hydrosphere.monitoring.manager.api.http
 
 import io.hydrosphere.monitoring.manager.EndpointConfig
-import sttp.tapir.server.ziohttp.{ZioHttpInterpreter, ZioHttpServerOptions}
+import sttp.tapir.server.ziohttp.ZioHttpInterpreter
+import zhttp.http.{CORS, CORSConfig}
 import zhttp.service.Server
 import zio.{Has, ZIO}
-import zio.logging.{log, Logging}
+import zio.logging.log
 
 object HTTPServer {
   def routes = for {
     pluginEndpoint <- ZIO.service[PluginEndpoint]
     modelEndpoint  <- ZIO.service[ModelEndpoint]
     proxyEndpoint  <- ZIO.service[PluginProxyEndpoint]
-    routes = ZioHttpInterpreter()
-      .toHttp(
-        pluginEndpoint.serverEndpoints ++ modelEndpoint.serverEndpoints ++ proxyEndpoint.serverEndpoints
-      )
+    corsConfig = CORSConfig(
+      anyOrigin = true,
+      anyMethod = true,
+      allowCredentials = true
+    )
+    allRoutes =
+      pluginEndpoint.serverEndpoints ++ modelEndpoint.serverEndpoints ++ proxyEndpoint.serverEndpoints
+    compiled = ZioHttpInterpreter().toHttp(allRoutes)
+    routes   = CORS(compiled, corsConfig)
   } yield routes
 
   def start =

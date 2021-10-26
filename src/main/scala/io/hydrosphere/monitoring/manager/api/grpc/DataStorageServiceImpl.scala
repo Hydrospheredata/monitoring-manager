@@ -3,13 +3,12 @@ package io.hydrosphere.monitoring.manager.api.grpc
 import io.grpc.Status
 import io.hydrosphere.monitoring.manager.domain.data.{DataService, InferenceSubscriptionService}
 import io.hydrosphere.monitoring.manager.domain.model.ModelRepository
-import monitoring_manager.monitoring_manager.ZioMonitoringManager.DataStorageService
 import monitoring_manager.monitoring_manager._
 import monitoring_manager.monitoring_manager.GetInferenceDataUpdatesRequest.Data
-import zio.{stream, ZIO}
-import zio.stream.{ZSink, ZStream}
-import zio.logging.{log, Logger}
+import monitoring_manager.monitoring_manager.ZioMonitoringManager.DataStorageService
 import zio._
+import zio.logging.Logger
+import zio.stream.ZStream
 
 final case class DataStorageServiceImpl(
     log: Logger[String],
@@ -30,24 +29,20 @@ final case class DataStorageServiceImpl(
         case Data.Init(value) =>
           DataService
             .subscibeToInferenceData(
-              value.pluginId,
-              value.model.get.modelName,   //TODO(bulat) unsafe
-              value.model.get.modelVersion //TODO(bulat) unsafe
+              value.pluginId
             )
-            .mapBoth(
-              x => Status.INTERNAL.withCause(x),
-              el =>
-                GetInferenceDataUpdatesResponse(
-                  model = Some(
-                    ModelId(
-                      modelName = el.model.name,
-                      modelVersion = el.model.version
-                    )
-                  ),
-                  signature = Some(el.model.signature.toProto),
-                  inferenceDataObjs = el.data.keyValue.toSeq
-                )
-            )
+            .map { case (model, obj) =>
+              GetInferenceDataUpdatesResponse(
+                model = Some(
+                  ModelId(
+                    modelName = model.name,
+                    modelVersion = model.version
+                  )
+                ),
+                signature = Some(model.signature.toProto),
+                inferenceDataObjs = obj.keyValue.toSeq
+              )
+            }
             .provide(Has(log) ++ env ++ Has(subscriptionManager) ++ Has(modelRepository))
 
         case Data.Ack(value) => ZStream.empty

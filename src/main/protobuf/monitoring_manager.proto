@@ -106,7 +106,6 @@ service DataStorageService {
 message GetInferenceDataUpdatesRequest {
   message InitialRequest {
     string plugin_id = 1;
-    ModelId model = 2;
   }
 
   message Ack {

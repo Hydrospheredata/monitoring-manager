@@ -8,23 +8,15 @@ import zio.ZIO
 import zio.stream.ZStream
 
 object DataService {
-  case class DiscoveryEvent(model: Model, data: S3Object.ReadOnly)
 
-  case class NoInferenceData(pluginId: PluginId, modelName: ModelName, modelVersion: ModelVersion)
-      extends Error
+  case class NoInferenceData(pluginId: PluginId) extends Error
 
   def subscibeToInferenceData(
-      pluginId: PluginId,
-      modelName: ModelName,
-      modelVersion: ModelVersion
+      pluginId: PluginId
   ) =
     for {
-      mv         <- ZStream.fromEffect(ModelService.findModel(modelName, modelVersion))
       subManager <- ZStream.service[InferenceSubscriptionService]
-      inferenceData <- mv.inferenceDataPrefix match {
-        case Some(value) => ZStream(value)
-        case None        => ZStream.fail(NoInferenceData(pluginId, modelName, modelVersion))
-      }
-      data <- subManager.subscribe(pluginId, inferenceData.u)
-    } yield DiscoveryEvent(mv, data)
+      hub        <- ZStream.fromEffect(subManager.subscribe(pluginId))
+      stream     <- ZStream.fromHub(hub)
+    } yield stream
 }
