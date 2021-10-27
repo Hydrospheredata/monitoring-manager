@@ -50,7 +50,8 @@ object Layers {
 
   val modelSub = (db ++ modelHub) >>> ModelSubscriptionManager.layer
 
-  val inferenceSub = (S3ObjectIndex.layer ++ s3Client ++ db) >>> InferenceSubscriptionService.layer
+  val inferenceSub =
+    (S3ObjectIndex.layer ++ s3Client ++ db ++ logger) >>> InferenceSubscriptionService.layer
 
   val all =
     Config.layer ++ logger ++ db ++ api ++ modelSub ++ inferenceSub

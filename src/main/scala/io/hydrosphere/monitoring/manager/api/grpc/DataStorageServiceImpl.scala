@@ -43,6 +43,8 @@ final case class DataStorageServiceImpl(
                 inferenceDataObjs = Seq(obj.fullPath.toString())
               )
             }
+            .tap(data => log.info(s"${value.pluginId} data: ${data.toProtoString}"))
+            .ensuring(log.info(s"Stream for ${value.pluginId} plugin finished"))
             .provide(Has(log) ++ env ++ Has(subscriptionManager) ++ Has(modelRepository))
 
         case Data.Ack(value) => ZStream.empty
