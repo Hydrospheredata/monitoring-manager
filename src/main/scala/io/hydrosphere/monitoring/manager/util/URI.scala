@@ -5,7 +5,9 @@ import io.getquill.MappedEncoding
 import sttp.model.Uri
 import sttp.tapir.Schema
 
-case class URI(u: Uri) extends AnyVal
+case class URI(u: Uri) extends AnyVal {
+  override def toString = u.toString()
+}
 
 object URI {
   def parse(str: String)              = Uri.parse(str).map(URI.apply)
