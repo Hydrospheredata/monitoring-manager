@@ -80,6 +80,27 @@ trait ReportRepository {
   def peekForModelVersion(modelName: ModelName, modelVersion: ModelVersion): ZStream[Any, ModelNotFound, String]
 }
 
+case class ReportRepositoryImpl() extends ReportRepository {
+  override def create(report: Report): ZIO[Any, Throwable, Report] = ???
+
+  override def get(
+      modelName: ModelName,
+      modelVersion: ModelVersion,
+      inferenceFile: String
+  ): ZIO[Any, ReportNotFound, Report] = ???
+
+  /** Returns stream of inference files with reports for a model
+    */
+  override def peekForModelVersion(
+      modelName: ModelName,
+      modelVersion: ModelVersion
+  ): ZStream[Any, ModelNotFound, String] = ???
+}
+
+object ReportRepositoryImpl {
+  val layer: URLayer[Any, Has[ReportRepository]] = (ReportRepositoryImpl.apply _).toLayer
+}
+
 object ReportErrors {
   case class ReportNotFound(modelName: ModelName, modelVersion: ModelVersion, inferenceFile: String)
       extends Error(s"Can't find report for $inferenceFile ($modelName:$modelVersion)")

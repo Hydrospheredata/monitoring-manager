@@ -7,13 +7,14 @@ import io.hydrosphere.monitoring.manager.db.{DatabaseContext, FlywayClient}
 import io.hydrosphere.monitoring.manager.domain.data._
 import io.hydrosphere.monitoring.manager.domain.model._
 import io.hydrosphere.monitoring.manager.domain.plugin.PluginRepositoryImpl
+import io.hydrosphere.monitoring.manager.domain.report.ReportRepositoryImpl
 import sttp.client3.asynchttpclient.zio.{AsyncHttpClientZioBackend, SttpClient}
 import zio.{Has, Layer, ULayer, ZEnv, ZHub, ZLayer}
 import zio.logging.{LogAnnotation, Logger}
 import zio.logging.slf4j.Slf4jLogger
 
-/** Define all dependencies here. Construct services using ZLayers. Merge contructed ZLayers with
-  * API layer. API Layer is to be initialized and executed by zio.App
+/** Define all dependencies here. Construct services using ZLayers. Merge contructed ZLayers with API layer. API Layer
+  * is to be initialized and executed by zio.App
   */
 object Layers {
   val logger: ULayer[Has[Logger[String]]] = {
@@ -37,7 +38,8 @@ object Layers {
     val deps            = dbLayer ++ dbCtxLayer
     val pluginRepoLayer = deps >>> PluginRepositoryImpl.layer
     val modelRepoLayer  = deps ++ modelHub >>> ModelRepositoryImpl.layer
-    flywayLayer ++ pluginRepoLayer ++ modelRepoLayer
+    val reportRepoLayer = ReportRepositoryImpl.layer
+    flywayLayer ++ pluginRepoLayer ++ modelRepoLayer ++ reportRepoLayer
   }
 
   val sttp: Layer[Throwable, Has[SttpClient.Service]] = AsyncHttpClientZioBackend.layer()
