@@ -40,7 +40,7 @@ Chosen option: "Implement ACK with reports", because it comes out best in terms 
 
 ## Links <!-- optional -->
 
-* GRPC API for reports [here](/src/main/protobuf/monitoring_manager.proto#128)
+* GRPC API for reports [here](/src/main/protobuf/monitoring_manager.proto#L128-L157)
 * The solution could be represented by this [Architecture diagram](/docs/img/arch.png) 
 
 <!-- markdownlint-disable-file MD013 -->
