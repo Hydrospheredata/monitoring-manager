@@ -105,8 +105,142 @@ paths:
             text/plain:
               schema:
                 type: string
+  /api/v1/plugin-proxy/{pluginName}:
+    get:
+      tags:
+      - Plugin proxy
+      operationId: proxyRequest
+      parameters:
+      - name: pluginName
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: 'Invalid value, Invalid value for: headers, Invalid value for:
+            path, Invalid value for: query parameters, Invalid value for: body'
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/v1/report/{modelName}/{modelVersion}:
+    get:
+      tags:
+      - Report
+      operationId: listReportedFilesDesc
+      parameters:
+      - name: modelName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: modelVersion
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '400':
+          description: 'Invalid value for: path parameter modelVersion'
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/v1/report/{modelName}/{modelVersion}/{filename}:
+    get:
+      tags:
+      - Report
+      operationId: getReportDesc
+      parameters:
+      - name: modelName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: modelVersion
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: filename
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Report'
+        '400':
+          description: 'Invalid value for: path parameter modelVersion'
+          content:
+            text/plain:
+              schema:
+                type: string
 components:
   schemas:
+    ByFeature:
+      required:
+      - description
+      - isGood
+      type: object
+      properties:
+        description:
+          type: string
+        isGood:
+          type: boolean
+    ByRow:
+      required:
+      - rowId
+      - col
+      - description
+      - isGood
+      - value
+      type: object
+      properties:
+        rowId:
+          type: integer
+          format: int64
+        col:
+          type: string
+        description:
+          type: string
+        isGood:
+          type: boolean
+        value: {}
     Field:
       required:
       - name
@@ -125,6 +259,12 @@ components:
           type: string
         profile:
           type: string
+    Map_Seq_ByFeature:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          $ref: '#/components/schemas/ByFeature'
     Map_String:
       type: object
       additionalProperties:
@@ -164,15 +304,14 @@ components:
           $ref: '#/components/schemas/PluginInfo'
     PluginInfo:
       required:
-      - iconUrl
+      - addr
       - routePath
       - ngModuleName
-      - remoteEntry
       - remoteName
       - exposedModule
       type: object
       properties:
-        iconUrl:
+        addr:
           type: string
         routePath:
           type: string
@@ -184,6 +323,30 @@ components:
           type: string
         exposedModule:
           type: string
+    Report:
+      required:
+      - pluginId
+      - modelName
+      - modelVersion
+      - file
+      - featureReports
+      type: object
+      properties:
+        pluginId:
+          type: string
+        modelName:
+          type: string
+        modelVersion:
+          type: integer
+          format: int64
+        file:
+          type: string
+        rowReports:
+          type: array
+          items:
+            $ref: '#/components/schemas/ByRow'
+        featureReports:
+          $ref: '#/components/schemas/Map_Seq_ByFeature'
     Signature:
       type: object
       properties:
@@ -191,7 +354,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Field'
-        output:
+        outputs:
           type: array
           items:
             $ref: '#/components/schemas/Field'

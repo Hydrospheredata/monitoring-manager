@@ -16,15 +16,17 @@ object ReportEndpoint extends GenericEndpoint {
     .tag("Report")
 
   val listReportedFilesDesc = reportEndpoint
+    .name("listReportedFilesDesc")
     .in(path[ModelName]("modelName"))
     .in(path[ModelVersion]("modelVersion"))
     .get
     .out(jsonBody[List[String]])
 
   val getReportDesc = reportEndpoint
+    .name("getReportDesc")
     .in(path[ModelName]("modelName"))
     .in(path[ModelVersion]("modelVersion"))
-    .in(query[String]("filename"))
+    .in(path[String]("filename"))
     .get
     .out(jsonBody[Report])
 
