@@ -1,6 +1,5 @@
 package io.hydrosphere.monitoring.manager.domain.data
 
-import io.github.vigoo.zioaws.s3.model.S3Object
 import io.hydrosphere.monitoring.manager.domain.data.InferenceSubscriptionService.S3Data
 import io.hydrosphere.monitoring.manager.domain.model.{Model, ModelRepository}
 import io.hydrosphere.monitoring.manager.domain.plugin.Plugin.PluginId
@@ -15,27 +14,36 @@ case class InferenceSubscriptionService(
     modelRepository: ModelRepository,
     s3Client: S3Client,
     objIndex: S3ObjectIndex,
-    state: Ref[Map[PluginId, zio.Hub[S3Data]]],
+    hubsState: Ref[Map[PluginId, zio.Hub[S3Data]]],
+    streams: Ref[Map[PluginId, ZStream[Any, Nothing, S3Data]]],
     cap: Int
 ) {
-  def subscribe(pluginId: PluginId) = {
-    val get = state.get
+  def hubGetOrSet(pluginId: PluginId) = {
+    val getHub = hubsState.get
       .flatMap(m => ZIO.fromOption(m.get(pluginId))) <* log.debug(s"Got $pluginId hub from cache")
-    val create = for {
+    val createHub = for {
       hub <- ZHub.bounded[S3Data](cap)
-      _   <- state.update(m => m + (pluginId -> hub))
+      _   <- hubsState.update(m => m + (pluginId -> hub))
       _   <- log.debug(s"Created $pluginId hub")
     } yield hub
-    get.orElse(create)
+    getHub.orElse(createHub)
   }
 
-  def unsubscribe(pluginId: PluginId) =
-    state.update(stateMap => stateMap - pluginId)
+  def getStream(pluginId: PluginId) = streams.get.flatMap(m => ZIO.fromOption(m.get(pluginId)))
+
+  def subscribe(pluginId: PluginId) = {
+    val streamCreate = hubGetOrSet(pluginId)
+      .map(x => ZStream.fromHub(x))
+      .ensuring(removeStream(pluginId))
+    ZStream.fromEffect(getStream(pluginId).orElse(streamCreate)).flatten
+  }
+
+  def removeStream(pluginId: PluginId) = streams.update(streamMap => streamMap - pluginId)
 
   def startMonitoring =
     monitoringStep
       .tap { case (model, obj) =>
-        state.get.flatMap { stateMap =>
+        hubsState.get.flatMap { stateMap =>
           log.info(s"Sending ${obj.fullPath} to ${stateMap.keys.toList}") *>
             ZIO
               .foreach(stateMap.toSeq) { case (pluginId, hub) =>
@@ -68,9 +76,10 @@ object InferenceSubscriptionService {
       modelRepository: ModelRepository,
       log: Logger[String]
   ): ZIO[Any, Nothing, InferenceSubscriptionService] = for {
-    state <- ZRef.make(Map.empty[PluginId, zio.Hub[S3Data]])
+    state   <- ZRef.make(Map.empty[PluginId, zio.Hub[S3Data]])
+    streams <- ZRef.make(Map.empty[PluginId, ZStream[Any, Nothing, S3Data]])
     cap = 20 //TODO(bulat): move to config
-  } yield InferenceSubscriptionService(log, modelRepository, s3Client, objIndex, state, cap)
+  } yield InferenceSubscriptionService(log, modelRepository, s3Client, objIndex, state, streams, cap)
 
   val layer = (for {
     log             <- ZIO.service[Logger[String]]

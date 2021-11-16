@@ -1,8 +1,10 @@
 package io.hydrosphere.monitoring.manager.api.grpc
 
 import io.grpc.Status
-import io.hydrosphere.monitoring.manager.domain.data.{DataService, InferenceSubscriptionService}
-import io.hydrosphere.monitoring.manager.domain.model.ModelRepository
+import io.hydrosphere.monitoring.manager.domain.data.InferenceSubscriptionService.S3Data
+import io.hydrosphere.monitoring.manager.domain.data.{DataService, InferenceSubscriptionService, S3Obj}
+import io.hydrosphere.monitoring.manager.domain.model.{Model, ModelRepository}
+import io.hydrosphere.monitoring.manager.domain.report.ReportRepository
 import monitoring_manager.monitoring_manager._
 import monitoring_manager.monitoring_manager.GetInferenceDataUpdatesRequest.Data
 import monitoring_manager.monitoring_manager.ZioMonitoringManager.DataStorageService
@@ -12,9 +14,8 @@ import zio.stream.ZStream
 
 final case class DataStorageServiceImpl(
     log: Logger[String],
-    env: ZEnv,
     subscriptionManager: InferenceSubscriptionService,
-    modelRepository: ModelRepository
+    reportRepository: ReportRepository
 ) extends DataStorageService {
   override def getInferenceDataUpdates(
       request: stream.Stream[Status, GetInferenceDataUpdatesRequest]
@@ -31,33 +32,16 @@ final case class DataStorageServiceImpl(
             .subscibeToInferenceData(
               value.pluginId
             )
-            .map { case (model, obj) =>
-              GetInferenceDataUpdatesResponse(
-                model = Some(
-                  ModelId(
-                    modelName = model.name,
-                    modelVersion = model.version
-                  )
-                ),
-                signature = Some(model.signature.toProto),
-                inferenceDataObjs = Seq(obj.fullPath.toString())
-              )
-            }
             .tap(data => log.info(s"${value.pluginId} data: ${data.toProtoString}"))
             .ensuring(log.info(s"Stream for ${value.pluginId} plugin finished"))
-            .provide(Has(log) ++ env ++ Has(subscriptionManager) ++ Has(modelRepository))
+            .provide(Has(log) ++ Has(subscriptionManager))
 
-        case Data.Ack(value) => ZStream.empty
+        case Data.Ack(value) =>
+          DataService.subscibeToInferenceData(value.pluginId).provide(Has(subscriptionManager))
       }
 }
 
 object DataStorageServiceImpl {
-  val layer: ZLayer[Has[ModelRepository] with Has[InferenceSubscriptionService] with Has[
-    Logger[String]
-  ] with zio.ZEnv, Nothing, Has[DataStorageService]] = (for {
-    env                 <- ZIO.environment[ZEnv]
-    log                 <- ZIO.service[Logger[String]]
-    subscriptionManager <- ZIO.service[InferenceSubscriptionService]
-    modelRepository     <- ZIO.service[ModelRepository]
-  } yield DataStorageServiceImpl.apply(log, env, subscriptionManager, modelRepository)).toLayer
+  val layer =
+    (DataStorageServiceImpl.apply _).toLayer
 }
