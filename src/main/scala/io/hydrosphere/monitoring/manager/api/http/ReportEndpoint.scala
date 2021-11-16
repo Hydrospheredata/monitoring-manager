@@ -1,6 +1,7 @@
 package io.hydrosphere.monitoring.manager.api.http
 
 import io.hydrosphere.monitoring.manager.api.http.ReportEndpoint.{getReportDesc, listReportedFilesDesc}
+import io.hydrosphere.monitoring.manager.domain.data.S3Obj
 import io.hydrosphere.monitoring.manager.domain.model.Model.{ModelName, ModelVersion}
 import io.hydrosphere.monitoring.manager.domain.report.{Report, ReportRepository}
 
@@ -20,7 +21,7 @@ object ReportEndpoint extends GenericEndpoint {
     .in(path[ModelName]("modelName"))
     .in(path[ModelVersion]("modelVersion"))
     .get
-    .out(jsonBody[List[String]])
+    .out(jsonBody[List[S3Obj]])
 
   val getReportDesc = reportEndpoint
     .name("getReportDesc")
