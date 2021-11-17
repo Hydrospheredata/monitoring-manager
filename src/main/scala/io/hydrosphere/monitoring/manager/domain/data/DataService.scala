@@ -1,10 +1,10 @@
 package io.hydrosphere.monitoring.manager.domain.data
 
-import io.hydrosphere.monitoring.manager.domain.data.InferenceSubscriptionService.S3Data
 import io.hydrosphere.monitoring.manager.domain.model.Model
 import io.hydrosphere.monitoring.manager.domain.plugin.Plugin.PluginId
 import monitoring_manager.monitoring_manager.{GetInferenceDataUpdatesResponse, ModelId}
 import zio.stream.ZStream
+import zio.logging.log
 
 object DataService {
 
@@ -13,10 +13,11 @@ object DataService {
   def subscibeToInferenceData(
       pluginId: PluginId
   ) =
-    for {
+    (for {
       subManager   <- ZStream.service[InferenceSubscriptionService]
       (model, obj) <- subManager.subscribe(pluginId)
-    } yield mapToGrpc(model, obj)
+    } yield mapToGrpc(model, obj))
+      .ensuring(log.info(s"Stream for $pluginId plugin finished"))
 
   def mapToGrpc(model: Model, obj: S3Obj) =
     GetInferenceDataUpdatesResponse(

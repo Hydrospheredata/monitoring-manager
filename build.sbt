@@ -13,6 +13,8 @@ Compile / PB.targets := Seq(
   scalapb.zio_grpc.ZioCodeGenerator -> (Compile / sourceManaged).value / "scalapb"
 )
 
+IntegrationTest / fork := true
+
 enablePlugins(JavaAppPackaging)
 enablePlugins(DockerPlugin)
 

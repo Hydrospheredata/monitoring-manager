@@ -2,14 +2,16 @@ package io.hydrosphere.monitoring.manager
 
 import io.getquill.context.ZioJdbc.DataSourceLayer
 import io.github.vigoo.zioaws._
+import io.github.vigoo.zioaws.core.config
 import io.hydrosphere.monitoring.manager.api.http._
-import io.hydrosphere.monitoring.manager.db.{DatabaseContext, FlywayClient}
+import io.hydrosphere.monitoring.manager.db.{CloseableDataSource, DatabaseContext, FlywayClient}
 import io.hydrosphere.monitoring.manager.domain.data._
 import io.hydrosphere.monitoring.manager.domain.model._
-import io.hydrosphere.monitoring.manager.domain.plugin.PluginRepositoryImpl
-import io.hydrosphere.monitoring.manager.domain.report.ReportRepositoryImpl
+import io.hydrosphere.monitoring.manager.domain.plugin.{PluginRepository, PluginRepositoryImpl}
+import io.hydrosphere.monitoring.manager.domain.report.{ReportRepository, ReportRepositoryImpl}
 import sttp.client3.asynchttpclient.zio.{AsyncHttpClientZioBackend, SttpClient}
-import zio.{Has, Layer, ULayer, ZEnv, ZHub, ZLayer}
+import zio.blocking.Blocking
+import zio.{system, Has, Layer, ULayer, ZEnv, ZHub, ZLayer}
 import zio.logging.{LogAnnotation, Logger}
 import zio.logging.slf4j.Slf4jLogger
 
@@ -31,14 +33,16 @@ object Layers {
 
   val modelHub = ZHub.unbounded[Model].toLayer
 
-  val db = {
+  val db: ZLayer[Blocking, Throwable, Has[FlywayClient] with Has[PluginRepository] with Has[ModelRepository] with Has[
+    ReportRepository
+  ]] = {
     val dbLayer         = DataSourceLayer.fromPrefix(Config.databaseConfPrefix)
     val dbCtxLayer      = DatabaseContext.layer
-    val flywayLayer     = (dbLayer >>> FlywayClient.layer).tap(_.get.migrate())
+    val flywayLayer     = (dbLayer ++ ZLayer.identity[Blocking] >>> FlywayClient.layer).tap(_.get.migrate())
     val deps            = dbLayer ++ dbCtxLayer
     val pluginRepoLayer = deps >>> PluginRepositoryImpl.layer
     val modelRepoLayer  = deps ++ modelHub >>> ModelRepositoryImpl.layer
-    val reportRepoLayer = ReportRepositoryImpl.layer
+    val reportRepoLayer = deps >>> ReportRepositoryImpl.layer
     flywayLayer ++ pluginRepoLayer ++ modelRepoLayer ++ reportRepoLayer
   }
 

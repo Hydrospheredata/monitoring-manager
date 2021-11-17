@@ -104,14 +104,8 @@ service DataStorageService {
 }
 
 message GetInferenceDataUpdatesRequest {
-  message InitialRequest {
-    string plugin_id = 1;
-  }
-
-  oneof data {
-    InitialRequest init = 1;
-    AnalyzedAck ack = 2;
-  }
+  string plugin_id = 1;
+  AnalyzedAck ack = 2;
 }
 
 message GetInferenceDataUpdatesResponse {
@@ -126,12 +120,11 @@ message ModelId {
 }
 
 message AnalyzedAck {
-  string plugin_id = 1;
-  string model_name = 2;
-  uint64 model_version = 3;
-  string inference_data_obj = 4;
-  repeated RowReport row_reports = 5;
-  map<string, FeatureReport> feature_reports = 6;
+  string model_name = 1;
+  uint64 model_version = 2;
+  string inference_data_obj = 3;
+  repeated RowReport row_reports = 4;
+  map<string, FeatureReport> feature_reports = 5;
 }
 
 message RowReport {

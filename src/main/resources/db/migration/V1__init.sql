@@ -20,3 +20,12 @@ CREATE TABLE hydrosphere.plugin(
     exposedModule TEXT,
     addr TEXT NOT NULL
 );
+
+CREATE TABLE hydrosphere.report(
+    pluginId VARCHAR(256) NOT NULL,
+    modelName VARCHAR(256) NOT NULL,
+    modelVersion NUMERIC NOT NULL,
+    file TEXT NOT NULL,
+    rowReports TEXT NOT NULL,
+    featureReports TEXT NOT NULL
+);

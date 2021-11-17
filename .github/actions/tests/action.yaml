@@ -8,7 +8,7 @@ inputs:
 runs:
   using: "composite"
 
-  steps:      
+  steps:
     - name: Setup scala
       uses: olafurpg/setup-scala@v11
       with:
@@ -27,6 +27,10 @@ runs:
       shell: bash
       run: "sbt initialize"
   
-    - name: Run tests
+    - name: Run unit tests
       shell: bash
-      run: "sbt test"  
+      run: "sbt test"
+
+    - name: Run integration tests
+      shell: bash
+      run: "sbt it:test"
