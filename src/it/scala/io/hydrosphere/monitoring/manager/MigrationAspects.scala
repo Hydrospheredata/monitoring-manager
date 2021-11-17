@@ -5,7 +5,7 @@ import com.zaxxer.hikari.{HikariConfig, HikariDataSource}
 import io.hydrosphere.monitoring.manager.db.{CloseableDataSource, FlywayClient}
 import zio.blocking.Blocking
 import zio.test.TestAspect
-import zio.test.TestAspect.before
+import zio.test.TestAspect.{before, beforeAll}
 import zio.{Has, ZIO, ZLayer}
 
 object MigrationAspects {
@@ -26,6 +26,6 @@ object MigrationAspects {
 
   def migrate(): TestAspect[Nothing, Blocking with Has[PostgreSQLContainer], Nothing, Any] = {
     val migration = FlywayClient.migrate().provideLayer(ZLayer.identity[Blocking] ++ flywayLayer)
-    before(migration.orDie)
+    beforeAll(migration.orDie)
   }
 }

@@ -50,9 +50,10 @@ object Layers {
 
   val pluginEndpoint =
     (ZLayer.requires[ZEnv] ++ db ++ sttp ++ Config.layer) >>> PluginEndpoint.layer
-  val modelEndpoint = db >>> ModelEndpoint.layer
-  val proxyEndpoint = (sttp ++ db) >>> PluginProxyEndpoint.layer
-  val api           = pluginEndpoint ++ modelEndpoint ++ proxyEndpoint
+  val modelEndpoint  = db >>> ModelEndpoint.layer
+  val proxyEndpoint  = (sttp ++ db) >>> PluginProxyEndpoint.layer
+  val reportEndpoint = db >>> ReportEndpoint.layer
+  val api            = pluginEndpoint ++ modelEndpoint ++ proxyEndpoint ++ reportEndpoint
 
   val modelSub = (db ++ modelHub) >>> ModelSubscriptionManager.layer
 

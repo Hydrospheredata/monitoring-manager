@@ -2,24 +2,25 @@ package io.hydrosphere.monitoring.manager.domain
 
 import com.dimafeng.testcontainers.PostgreSQLContainer
 import io.circe.Json
-import io.hydrosphere.monitoring.manager.db.{DatabaseContext, FlywayClient}
+import io.hydrosphere.monitoring.manager.db.DatabaseContext
 import io.hydrosphere.monitoring.manager.domain.report.{Report, ReportRepository, ReportRepositoryImpl}
 import io.hydrosphere.monitoring.manager.{GenericIntegrationTest, MigrationAspects, TestContainer}
-import zio.{Chunk, Has, ZIO, ZLayer}
 import zio.blocking.Blocking
 import zio.test._
-import zio.test.environment.TestEnvironment
+import zio.{Chunk, Has, ZIO, ZLayer}
 
-object ReportRepositoryITSpec extends GenericIntegrationTest {
-  val pgLayer: ZLayer[Any, Nothing, Has[PostgreSQLContainer]] = Blocking.live >>> TestContainer.postgres()
+object Deps {
+  val pgLayer: ZLayer[Any, Nothing, Has[PostgreSQLContainer]] = Blocking.live >>> TestContainer.postgres
   val repoLayer: ZLayer[Any, Nothing, Has[ReportRepository]] =
     (pgLayer >>> MigrationAspects.dsLayer) ++ DatabaseContext.layer >>> ReportRepositoryImpl.layer
 
   val testLayer: ZLayer[Any, Nothing, Has[PostgreSQLContainer] with Has[ReportRepository]] =
     pgLayer ++
       repoLayer
+}
 
-  def spec = (suite("ReportRepository")(
+object ReportRepositoryITSpec extends GenericIntegrationTest {
+  val spec = (suite("ReportRepository")(
     testM("should create a report") {
       val report = Report(
         pluginId = "test-plugin",
@@ -166,5 +167,5 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
         ZIO.foreach_(reports)(ReportRepository.create) *> ReportRepository.peekForModelVersion("model", 3).runCollect
       assertM(prog.map(_.toSet))(Assertion.equalTo(expected))
     }
-  ) @@ MigrationAspects.migrate()).provideCustomLayer(testLayer)
+  ) @@ MigrationAspects.migrate()).provideCustomLayerShared(Deps.testLayer)
 }

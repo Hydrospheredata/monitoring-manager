@@ -1,17 +1,25 @@
 package io.hydrosphere.monitoring.manager.api.http
 
-import io.hydrosphere.monitoring.manager.api.http.ReportEndpoint.{getReportDesc, listReportedFilesDesc}
-import io.hydrosphere.monitoring.manager.domain.data.S3Obj
+import io.hydrosphere.monitoring.manager.api.http.ReportEndpoint.{getReportDesc, listReportedFilesDesc, reportEndpoint}
 import io.hydrosphere.monitoring.manager.domain.model.Model.{ModelName, ModelVersion}
 import io.hydrosphere.monitoring.manager.domain.report.{Report, ReportRepository}
+import zio._
 
-class ReportEndpoint(reportRepo: ReportRepository) extends GenericEndpoint {
-  val listReportedFiles = listReportedFilesDesc.serverLogic { case (name, version) => ??? }
+case class ReportEndpoint(reportRepo: ReportRepository) extends GenericEndpoint {
+  val listReportedFiles = listReportedFilesDesc.serverLogic[Task] { case (name, version) =>
+    reportRepo.peekForModelVersion(name, version).runCollect.either
+  }
 
-  val getReport = getReportDesc.serverLogic { case (name, version, file) => ??? }
+  val getReport = getReportDesc.serverLogic[Task] { case (name, version, file) =>
+    reportRepo.get(name, version, file).runCollect.either
+  }
+
+  val serverEndpoints = List(listReportedFiles, getReport)
 }
 
 object ReportEndpoint extends GenericEndpoint {
+  val layer = (ReportEndpoint.apply _).toLayer
+
   val reportEndpoint = v1Endpoint
     .in("report")
     .tag("Report")
@@ -21,7 +29,8 @@ object ReportEndpoint extends GenericEndpoint {
     .in(path[ModelName]("modelName"))
     .in(path[ModelVersion]("modelVersion"))
     .get
-    .out(jsonBody[List[S3Obj]])
+    .out(jsonBody[Seq[String]])
+    .errorOut(throwableBody)
 
   val getReportDesc = reportEndpoint
     .name("getReportDesc")
@@ -29,7 +38,8 @@ object ReportEndpoint extends GenericEndpoint {
     .in(path[ModelVersion]("modelVersion"))
     .in(path[String]("filename"))
     .get
-    .out(jsonBody[Report])
+    .out(jsonBody[Seq[Report]])
+    .errorOut(throwableBody)
 
   val endpoints = List(listReportedFilesDesc, getReportDesc)
 }

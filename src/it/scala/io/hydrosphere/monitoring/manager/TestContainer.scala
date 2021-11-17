@@ -7,13 +7,10 @@ import zio.blocking._
 import zio._
 
 object TestContainer {
-  def postgres(imageName: Option[String] = None) =
+  val postgres =
     ZManaged.make {
       effectBlocking {
-        val image = imageName.map(DockerImageName.parse)
-        val container = new PostgreSQLContainer(
-          dockerImageNameOverride = image
-        )
+        val container = new PostgreSQLContainer()
         container.start()
         container
       }.orDie

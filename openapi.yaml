@@ -168,9 +168,15 @@ paths:
               schema:
                 type: array
                 items:
-                  $ref: '#/components/schemas/S3Obj'
+                  type: string
         '400':
           description: 'Invalid value for: path parameter modelVersion'
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: ''
           content:
             text/plain:
               schema:
@@ -203,9 +209,17 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Report'
+                type: array
+                items:
+                  $ref: '#/components/schemas/Report'
         '400':
           description: 'Invalid value for: path parameter modelVersion'
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: ''
           content:
             text/plain:
               schema:
@@ -347,23 +361,6 @@ components:
             $ref: '#/components/schemas/ByRow'
         featureReports:
           $ref: '#/components/schemas/Map_Seq_ByFeature'
-    S3Obj:
-      required:
-      - bucket
-      - key
-      - lastModified
-      - fullPath
-      type: object
-      properties:
-        bucket:
-          type: string
-        key:
-          type: string
-        lastModified:
-          type: string
-          format: date-time
-        fullPath:
-          type: string
     Signature:
       type: object
       properties:

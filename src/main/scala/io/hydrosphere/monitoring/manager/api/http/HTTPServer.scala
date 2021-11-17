@@ -12,13 +12,14 @@ object HTTPServer {
     pluginEndpoint <- ZIO.service[PluginEndpoint]
     modelEndpoint  <- ZIO.service[ModelEndpoint]
     proxyEndpoint  <- ZIO.service[PluginProxyEndpoint]
+    reportEndpoint <- ZIO.service[ReportEndpoint]
     corsConfig = CORSConfig(
       anyOrigin = true,
       anyMethod = true,
       allowCredentials = true
     )
     allRoutes =
-      pluginEndpoint.serverEndpoints ++ modelEndpoint.serverEndpoints ++ proxyEndpoint.serverEndpoints
+      pluginEndpoint.serverEndpoints ++ modelEndpoint.serverEndpoints ++ proxyEndpoint.serverEndpoints ++ reportEndpoint.serverEndpoints
     compiled = ZioHttpInterpreter().toHttp(allRoutes)
     routes   = CORS(compiled, corsConfig)
   } yield routes
