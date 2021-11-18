@@ -16,6 +16,7 @@ object Dependencies {
   final val api = Seq(
     "io.grpc"                      % "grpc-netty"               % scalapb.compiler.Version.grpcJavaVersion,
     "com.thesamet.scalapb"        %% "scalapb-runtime-grpc"     % scalapb.compiler.Version.scalapbVersion,
+    "com.google.api.grpc"          % "googleapis-common-protos" % "0.0.3" % "protobuf",
     "com.softwaremill.sttp.tapir" %% "tapir-zio-http"           % tapirVersion,
     "com.softwaremill.sttp.tapir" %% "tapir-json-circe"         % tapirVersion,
     "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs"       % tapirVersion,

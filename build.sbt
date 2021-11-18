@@ -1,5 +1,5 @@
 name         := "monitoring-manager"
-version      := "dev"
+version      := "latest"
 scalaVersion := "2.13.6"
 libraryDependencies ++= Dependencies.all
 Compile / packageBin / mainClass := Some("io.hydrosphere.monitoring.manager.Main")
@@ -24,3 +24,6 @@ openapi := (Compile / runMain).toTask(" io.hydrosphere.monitoring.manager.MkDocs
 Compile / mainClass := Some("io.hydrosphere.monitoring.manager.Main")
 
 addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
+
+dockerBaseImage      := "openjdk:11"
+Docker / packageName := "hydrosphere/monitoring-manager"

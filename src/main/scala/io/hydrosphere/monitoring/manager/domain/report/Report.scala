@@ -4,17 +4,20 @@ import io.circe.Json
 import io.circe.generic.JsonCodec
 import io.hydrosphere.monitoring.manager.domain.model.Model.{ModelName, ModelVersion}
 import io.hydrosphere.monitoring.manager.domain.plugin.Plugin.PluginId
-import io.hydrosphere.monitoring.manager.domain.report.Report.{ByFeature, FeatureReports, RowReports}
-import io.hydrosphere.monitoring.manager.util.QuillJson
+import io.hydrosphere.monitoring.manager.domain.report.Report.{FeatureReports, RowReports}
+import io.hydrosphere.monitoring.manager.util.{QuillJson, URI}
 import monitoring_manager.monitoring_manager.RowReport.Value
 import monitoring_manager.monitoring_manager.{AnalyzedAck, FRRow, RowReport}
+
+import java.time.{Instant, OffsetDateTime}
 
 @JsonCodec
 case class Report(
     pluginId: PluginId,
     modelName: ModelName,
     modelVersion: ModelVersion,
-    file: String,
+    file: URI,
+    fileModifiedAt: Instant,
     rowReports: RowReports,
     featureReports: FeatureReports
 )
@@ -36,6 +39,7 @@ object Report {
       isGood: Boolean,
       value: Json
   )
+
   object ByRow {
     def fromProto(proto: RowReport) = ByRow(
       rowId = proto.rowId,
@@ -57,6 +61,7 @@ object Report {
       description: String,
       isGood: Boolean
   )
+
   object ByFeature {
     def fromProto(proto: FRRow) = ByFeature(
       description = proto.description,
@@ -65,11 +70,16 @@ object Report {
   }
 
   def fromPluginAck(pluginId: String, ack: AnalyzedAck) =
-    Report(
+    for {
+      fileObj   <- ack.inferenceDataObj.toRight(".inferenceDataObj field is empty")
+      fileKey   <- URI.parse(fileObj.key)
+      timestamp <- fileObj.lastModifiedAt.toRight(".lastModifiedAt field is empty")
+    } yield Report(
       pluginId = pluginId,
       modelName = ack.modelName,
       modelVersion = ack.modelVersion,
-      file = ack.inferenceDataObj,
+      file = fileKey,
+      fileModifiedAt = timestamp.asJavaInstant,
       rowReports = ack.rowReports.map(ByRow.fromProto),
       featureReports = ack.featureReports.map { case (key, proto) => key -> proto.rows.map(ByFeature.fromProto) }
     )

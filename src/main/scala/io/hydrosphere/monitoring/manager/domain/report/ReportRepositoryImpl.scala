@@ -3,14 +3,18 @@ package io.hydrosphere.monitoring.manager.domain.report
 import io.getquill.context.ZioJdbc._
 import io.hydrosphere.monitoring.manager.db.{CloseableDataSource, DatabaseContext}
 import io.hydrosphere.monitoring.manager.domain.model.Model.{ModelName, ModelVersion}
-import zio.{ZIO, _}
+import io.hydrosphere.monitoring.manager.util.URI
 import zio.stream.ZStream
+import zio.{ZIO, _}
+
+import java.time.OffsetDateTime
 
 case class ReportRepositoryImpl(
     dataSource: CloseableDataSource,
     ctx: DatabaseContext
 ) extends ReportRepository {
   import ctx._
+
   final private val hasDS = Has(dataSource)
 
   override def create(report: Report): ZIO[Any, Throwable, Report] =
@@ -19,11 +23,13 @@ case class ReportRepositoryImpl(
   override def get(
       modelName: ModelName,
       modelVersion: ModelVersion,
-      inferenceFile: String
+      inferenceFile: URI
   ): ZStream[Any, Throwable, Report] = ctx
     .stream(
       query[Report].filter(x =>
-        x.modelName == lift(modelName) && x.modelVersion == lift(modelVersion) && x.file == lift(inferenceFile)
+        x.modelName == lift(modelName) && x.modelVersion == lift(modelVersion) && x.file == lift(
+          inferenceFile
+        )
       )
     )
     .provideLayer(DataSourceLayer.live)
@@ -34,7 +40,7 @@ case class ReportRepositoryImpl(
   override def peekForModelVersion(
       modelName: ModelName,
       modelVersion: ModelVersion
-  ): ZStream[Any, Throwable, String] = ctx
+  ): ZStream[Any, Throwable, URI] = ctx
     .stream(
       query[Report]
         .filter(x => x.modelName == lift(modelName) && x.modelVersion == lift(modelVersion))

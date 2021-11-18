@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package monitoring_manager;
 
+import "google/protobuf/timestamp.proto";
+
 message ModelSignature {
   repeated ModelField inputs = 2;
   repeated ModelField outputs = 3;
@@ -96,7 +98,7 @@ message GetModelUpdatesRequest {
 message GetModelUpdatesResponse {
   ModelId model = 1;
   ModelSignature signature = 2;
-  repeated string training_data_objs = 3;
+  repeated DataObject training_data_objs = 3;
 }
 
 service DataStorageService {
@@ -111,7 +113,7 @@ message GetInferenceDataUpdatesRequest {
 message GetInferenceDataUpdatesResponse {
   ModelId model = 1;
   ModelSignature signature = 2;
-  repeated string inference_data_objs = 3;
+  repeated DataObject inference_data_objs = 3;
 }
 
 message ModelId {
@@ -122,7 +124,7 @@ message ModelId {
 message AnalyzedAck {
   string model_name = 1;
   uint64 model_version = 2;
-  string inference_data_obj = 3;
+  DataObject inference_data_obj = 3;
   repeated RowReport row_reports = 4;
   map<string, FeatureReport> feature_reports = 5;
 }
@@ -147,4 +149,9 @@ message FeatureReport {
 message FRRow {
   string description = 1;
   bool is_good = 2;
+}
+
+message DataObject {
+  string key = 1;
+  google.protobuf.Timestamp lastModifiedAt = 2;
 }

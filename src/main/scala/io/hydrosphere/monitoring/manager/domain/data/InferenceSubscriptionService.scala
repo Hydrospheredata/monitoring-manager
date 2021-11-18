@@ -1,13 +1,15 @@
 package io.hydrosphere.monitoring.manager.domain.data
 
+import cats.kernel.instances.StringMonoid
 import io.hydrosphere.monitoring.manager.domain.data.InferenceSubscriptionService.S3Data
 import io.hydrosphere.monitoring.manager.domain.model.{Model, ModelRepository}
 import io.hydrosphere.monitoring.manager.domain.plugin.Plugin.PluginId
+import monitoring_manager.monitoring_manager.{AnalyzedAck, DataObject}
 import zio.{Has, Ref, Schedule, ZHub, ZIO, ZRef}
 import zio.logging.Logger
 import zio.stream.ZStream
 
-import java.time.Duration
+import java.time.{Duration, Instant, LocalDateTime, OffsetDateTime}
 
 case class InferenceSubscriptionService(
     log: Logger[String],
@@ -18,6 +20,11 @@ case class InferenceSubscriptionService(
     streams: Ref[Map[PluginId, ZStream[Any, Nothing, S3Data]]],
     cap: Int
 ) {
+  def markObjSeen(
+      pluginId: String,
+      obj: S3Ref
+  ) = objIndex.mark(pluginId, obj)
+
   def hubGetOrSet(pluginId: PluginId) = {
     val getHub = hubsState.get
       .flatMap(m => ZIO.fromOption(m.get(pluginId))) <* log.debug(s"Got $pluginId hub from cache")
@@ -47,7 +54,7 @@ case class InferenceSubscriptionService(
           log.info(s"Sending ${obj.fullPath} to ${stateMap.keys.toList}") *>
             ZIO
               .foreach(stateMap.toSeq) { case (pluginId, hub) =>
-                log.info(s"Got object $obj") *>
+                log.debug(s"Got object $obj") *>
                   (hub.publish(model -> obj).whenM(objIndex.isNew(pluginId, obj)))
               }
               .unit
@@ -63,12 +70,12 @@ case class InferenceSubscriptionService(
       .all()
       .map(x => x -> x.inferenceDataPrefix)
       .collect { case (m, Some(prefix)) => m -> prefix }
-      .flatMap { case (m, prefix) => s3Client.getPrefixData(prefix.u).map(o => m -> o) }
-      .tap(d => log.info(s"Got from S3 $d"))
+      .flatMap { case (m, prefix) => s3Client.getPrefixData(prefix.u).map(o => m -> o.toRef) }
+      .tap(d => log.debug(s"Got from S3 $d"))
 }
 
 object InferenceSubscriptionService {
-  type S3Data = (Model, S3Obj)
+  type S3Data = (Model, S3Ref)
 
   def make(
       s3Client: S3Client,

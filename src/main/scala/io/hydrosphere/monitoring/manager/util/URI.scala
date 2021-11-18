@@ -3,10 +3,13 @@ package io.hydrosphere.monitoring.manager.util
 import io.circe._
 import io.getquill.MappedEncoding
 import sttp.model.Uri
-import sttp.tapir.Schema
+import sttp.tapir.{Codec, Schema}
 
 case class URI(u: Uri) extends AnyVal {
   override def toString = u.toString()
+
+  def ==(str: String): Boolean =
+    this.toString == str
 }
 
 object URI {
@@ -26,4 +29,6 @@ object URI {
 
   implicit val schema: Schema[URI] =
     Schema.schemaForString.map(str => Uri.parse(str).map(URI.apply).toOption)(_.u.toString())
+
+  implicit val codec = Codec.uri.map(URI.apply _)(_.u)
 }
