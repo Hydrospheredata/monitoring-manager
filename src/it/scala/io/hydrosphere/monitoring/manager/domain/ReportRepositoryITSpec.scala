@@ -4,10 +4,14 @@ import com.dimafeng.testcontainers.PostgreSQLContainer
 import io.circe.Json
 import io.hydrosphere.monitoring.manager.db.DatabaseContext
 import io.hydrosphere.monitoring.manager.domain.report.{Report, ReportRepository, ReportRepositoryImpl}
+import io.hydrosphere.monitoring.manager.util.URI
+import io.hydrosphere.monitoring.manager.util.URI.Context
 import io.hydrosphere.monitoring.manager.{GenericIntegrationTest, MigrationAspects, TestContainer}
 import zio.blocking.Blocking
 import zio.test._
 import zio.{Chunk, Has, ZIO, ZLayer}
+
+import java.time.Instant
 
 object Deps {
   val pgLayer: ZLayer[Any, Nothing, Has[PostgreSQLContainer]] = Blocking.live >>> TestContainer.postgres
@@ -20,13 +24,15 @@ object Deps {
 }
 
 object ReportRepositoryITSpec extends GenericIntegrationTest {
+  val i = Instant.now()
   val spec = (suite("ReportRepository")(
     testM("should create a report") {
       val report = Report(
         pluginId = "test-plugin",
         modelName = "model",
         modelVersion = 1,
-        file = "s3://test/file.csv",
+        file = uri"s3://test/file.csv",
+        fileModifiedAt = i,
         rowReports = Seq(
           Report.ByRow(
             rowId = 1,
@@ -56,7 +62,8 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
         pluginId = "test-plugin",
         modelName = "model",
         modelVersion = 2,
-        file = "s3://test/specific.csv",
+        file = uri"s3://test/specific.csv",
+        fileModifiedAt = i,
         rowReports = Seq(
           Report.ByRow(
             rowId = 1,
@@ -78,7 +85,8 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
           "b" -> Seq(Report.ByFeature("not-ok", false), Report.ByFeature("really-not-good", false))
         )
       )
-      val res = ReportRepository.create(report) *> ReportRepository.get("model", 2, "s3://test/specific.csv").runCollect
+      val res =
+        ReportRepository.create(report) *> ReportRepository.get("model", 2, uri"s3://test/specific.csv").runCollect
       assertM(res)(Assertion.equalTo(Chunk(report)))
     },
     testM("should return all inference files for a model") {
@@ -87,7 +95,8 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
           pluginId = "test-plugin-1",
           modelName = "model",
           modelVersion = 3,
-          file = "s3://test/specific1.csv",
+          file = uri"s3://test/specific1.csv",
+          fileModifiedAt = i,
           rowReports = Seq(
             Report.ByRow(
               rowId = 1,
@@ -113,7 +122,8 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
           pluginId = "test-plugin-2",
           modelName = "model",
           modelVersion = 3,
-          file = "s3://test/specific1.csv",
+          file = uri"s3://test/specific1.csv",
+          fileModifiedAt = i,
           rowReports = Seq(
             Report.ByRow(
               rowId = 1,
@@ -139,7 +149,8 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
           pluginId = "test-plugin-1",
           modelName = "model",
           modelVersion = 3,
-          file = "s3://test/specific2.csv",
+          file = uri"s3://test/specific2.csv",
+          fileModifiedAt = i,
           rowReports = Seq(
             Report.ByRow(
               rowId = 1,
@@ -162,7 +173,7 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
           )
         )
       )
-      val expected = Set("s3://test/specific1.csv", "s3://test/specific2.csv")
+      val expected = Set(uri"s3://test/specific1.csv", uri"s3://test/specific2.csv")
       val prog =
         ZIO.foreach_(reports)(ReportRepository.create) *> ReportRepository.peekForModelVersion("model", 3).runCollect
       assertM(prog.map(_.toSet))(Assertion.equalTo(expected))

@@ -2,7 +2,7 @@ package io.hydrosphere.monitoring.manager.util
 
 import io.circe._
 import io.getquill.MappedEncoding
-import sttp.model.Uri
+import sttp.model.{Uri, UriInterpolator}
 import sttp.tapir.{Codec, Schema}
 
 case class URI(u: Uri) extends AnyVal {
@@ -13,6 +13,10 @@ case class URI(u: Uri) extends AnyVal {
 }
 
 object URI {
+  implicit class Context(val sc: StringContext) {
+    def uri(args: Any*): URI = URI(UriInterpolator.interpolate(sc, args: _*))
+  }
+
   def parse(str: String)              = Uri.parse(str).map(URI.apply)
   def fromJava(javaURI: java.net.URI) = URI(Uri(javaURI))
 

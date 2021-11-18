@@ -3,9 +3,8 @@ package io.hydrosphere.monitoring.manager.domain.data
 import io.circe.generic.JsonCodec
 import io.github.vigoo.zioaws.s3.model.S3Object
 import io.hydrosphere.monitoring.manager.util.{URI, UriUtil}
-import io.circe.generic.semiauto._
 
-import java.time.{Instant, LocalDateTime, OffsetDateTime}
+import java.time.Instant
 
 @JsonCodec
 case class S3Ref(fullPath: URI, lastModified: Instant)

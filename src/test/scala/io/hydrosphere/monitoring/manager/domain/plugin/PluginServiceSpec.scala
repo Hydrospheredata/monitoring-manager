@@ -1,8 +1,7 @@
 package io.hydrosphere.monitoring.manager.domain.plugin
 
 import io.hydrosphere.monitoring.manager.{Config, GenericUnitTest}
-import io.hydrosphere.monitoring.manager.util.URI
-import sttp.client3._
+import io.hydrosphere.monitoring.manager.util.URI._
 import zio.test._
 import zio.test.Assertion._
 import zio.test.mock.Expectation._
@@ -16,7 +15,7 @@ object PluginServiceSpec extends GenericUnitTest {
         description = "test",
         pluginInfo = Some(
           PluginInfo(
-            addr = URI(uri"localhost:1231"),
+            addr = uri"localhost:1231",
             routePath = "asd",
             ngModuleName = "asd",
             remoteEntry = None,
@@ -30,17 +29,16 @@ object PluginServiceSpec extends GenericUnitTest {
         description = "test",
         pluginInfo = Some(
           PluginInfo(
-            addr = URI(uri"localhost:1231"),
+            addr = uri"localhost:1231",
             routePath = "asd",
             ngModuleName = "asd",
-            remoteEntry =
-              Some(URI(uri"manager:123/api/v1/plugin-proxy/test/static/remoteEntry.js")),
+            remoteEntry = Some(uri"manager:123/api/v1/plugin-proxy/test/static/remoteEntry.js"),
             remoteName = "asd",
             exposedModule = "asd"
           )
         )
       )
-      val result = PluginService.resolveRemoteEntry(plugin, URI(uri"manager:123"))
+      val result = PluginService.resolveRemoteEntry(plugin, uri"manager:123")
       print(result.asJson.toString())
       assert(result)(equalTo(expected))
     },
