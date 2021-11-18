@@ -105,6 +105,44 @@ paths:
             text/plain:
               schema:
                 type: string
+  /api/v1/model/{modelName}/{modelVersion}/reports:
+    get:
+      tags:
+      - Model
+      operationId: listAssociatedReports
+      parameters:
+      - name: modelName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: modelVersion
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '400':
+          description: 'Invalid value for: path parameter modelVersion'
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
   /api/v1/plugin-proxy/{pluginName}:
     get:
       tags:
@@ -143,63 +181,25 @@ paths:
             text/plain:
               schema:
                 type: string
-  /api/v1/report/{modelName}/{modelVersion}:
-    get:
-      tags:
-      - Report
-      operationId: listReportedFilesDesc
-      parameters:
-      - name: modelName
-        in: path
-        required: true
-        schema:
-          type: string
-      - name: modelVersion
-        in: path
-        required: true
-        schema:
-          type: integer
-          format: int64
-      responses:
-        '200':
-          description: ''
-          content:
-            application/json:
-              schema:
-                type: array
-                items:
-                  type: string
-        '400':
-          description: 'Invalid value for: path parameter modelVersion'
-          content:
-            text/plain:
-              schema:
-                type: string
-        default:
-          description: ''
-          content:
-            text/plain:
-              schema:
-                type: string
-  /api/v1/report/{modelName}/{modelVersion}/{filename}:
+  /api/v1/report:
     get:
       tags:
       - Report
       operationId: getReportDesc
       parameters:
       - name: modelName
-        in: path
+        in: query
         required: true
         schema:
           type: string
       - name: modelVersion
-        in: path
+        in: query
         required: true
         schema:
           type: integer
           format: int64
-      - name: filename
-        in: path
+      - name: file
+        in: query
         required: true
         schema:
           type: string
@@ -213,7 +213,9 @@ paths:
                 items:
                   $ref: '#/components/schemas/Report'
         '400':
-          description: 'Invalid value for: path parameter modelVersion'
+          description: 'Invalid value for: query parameter modelName, Invalid value
+            for: query parameter modelVersion, Invalid value for: query parameter
+            file'
           content:
             text/plain:
               schema:
@@ -343,6 +345,7 @@ components:
       - modelName
       - modelVersion
       - file
+      - fileModifiedAt
       - featureReports
       type: object
       properties:
@@ -355,6 +358,9 @@ components:
           format: int64
         file:
           type: string
+        fileModifiedAt:
+          type: string
+          format: date-time
         rowReports:
           type: array
           items:
