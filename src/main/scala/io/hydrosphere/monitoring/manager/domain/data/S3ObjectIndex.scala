@@ -1,26 +1,48 @@
 package io.hydrosphere.monitoring.manager.domain.data
 
+import io.hydrosphere.monitoring.manager.domain.data.S3ObjectIndex.IndexKey
+import io.hydrosphere.monitoring.manager.domain.model.Model.{ModelName, ModelVersion}
+import io.hydrosphere.monitoring.manager.domain.plugin.Plugin.PluginId
+import io.hydrosphere.monitoring.manager.util.{URI, ZDeadline}
+import zio.clock.Clock
+import zio.macros.accessible
 import zio.{Ref, ZIO, ZRef}
-import zio.logging.log
+
+import java.time.Instant
+
+@accessible
+trait S3ObjectIndex {
+  def isNew(pluginId: PluginId, obj: S3Ref): ZIO[Clock, Throwable, Boolean]
+}
 
 object S3ObjectIndex {
+  case class IndexKey(
+      pluginId: PluginId,
+      s3Uri: URI,
+      s3ModifiedAt: Instant
+  )
+
   def make(): ZIO[Any, Nothing, S3ObjectIndex] = for {
-    state <- ZRef.make(Set.empty[(String, S3Ref)])
-  } yield S3ObjectIndex(state)
+    state <- ZRef.make(Map.empty[IndexKey, ZDeadline])
+  } yield S3ObjectIndexImpl(state): S3ObjectIndex
 
   val layer = make().toLayer
 }
 
-case class S3ObjectIndex(state: Ref[Set[(String, S3Ref)]]) {
-  def isNew(pluginId: String, obj: S3Ref) = {
-    val objSeen = state.get.map(s => s(pluginId -> obj))
-    objSeen.tap {
-      case true =>
-        log.debug(s"$pluginId saw $obj").as(false)
-      case false => log.debug(s"$pluginId didn't see $obj")
+case class S3ObjectIndexImpl(state: Ref[Map[IndexKey, ZDeadline]]) extends S3ObjectIndex {
+  def isNew(pluginId: PluginId, obj: S3Ref): ZIO[Clock, Throwable, Boolean] = {
+    val key         = IndexKey(pluginId, obj.fullPath, obj.lastModified)
+    val getDeadline = state.get.map(s => s.get(key))
+    getDeadline.flatMap {
+      case Some(deadline) =>
+        deadline.isOverdue.flatMap {
+          case true =>
+            state.update(state => state - key) *>
+              ZIO(true)
+          case false =>
+            ZIO(false)
+        }
+      case None => ZIO(true)
     }
   }
-
-  def mark(pluginId: String, obj: S3Ref) =
-    state.updateAndGet(s => s + (pluginId -> obj)).unit
 }

@@ -1,5 +1,6 @@
 package io.hydrosphere.monitoring.manager.domain.report
 
+import io.hydrosphere.monitoring.manager.domain.data.{InferenceSubscriptionService, S3Ref}
 import io.hydrosphere.monitoring.manager.domain.report.ReportErrors.InvalidAckReport
 import monitoring_manager.monitoring_manager.GetInferenceDataUpdatesRequest
 import zio._

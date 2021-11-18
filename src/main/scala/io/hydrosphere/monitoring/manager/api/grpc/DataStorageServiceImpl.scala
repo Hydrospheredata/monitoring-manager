@@ -17,23 +17,29 @@ final case class DataStorageServiceImpl(
   override def getInferenceDataUpdates(
       request: stream.Stream[Status, GetInferenceDataUpdatesRequest]
   ) = {
-    val discStream = ZStream.fromEffect(request.runHead).flatMap {
-      case Some(value) => DataService.subscibeToInferenceData(value.pluginId)
-      case None        => ZStream.fromEffect(log.warn("Discovery with empty stream")) *> ZStream.empty
-    }
-
     //noinspection SimplifyTapInspection (bug in idea-zio)
     val ackFbr = request
       .mapError(_.asRuntimeException())
       .tap(req => log.debug(s"Got request: ${req.pluginId} ack=${req.ack.isDefined}"))
-      .tap(DataService.markObjSeen)
       .tap(ReportService.addReport(_).either)
       .tapError(err => log.throwable("Error while handling plugin request", err))
       .mapError(Status.fromThrowable)
       .runDrain
       .fork
 
-    (ZStream.fromEffect(ackFbr) >>= (f => discStream.interruptWhen(f.join)))
+    val a = request
+      .mapError(_.asRuntimeException())
+      .tap(req => log.debug(s"Got request: ${req.pluginId} ack=${req.ack.isDefined}"))
+      .tap(ReportService.addReport(_).either)
+      .tapError(err => log.throwable("Error while handling plugin request", err))
+      .zipRight(ZStream.empty)
+
+    val b = request
+      .mapError(_.asRuntimeException())
+      .flatMap(r => DataService.subscibeToInferenceData(r.pluginId))
+
+    a.merge(b)
+      .mapError(Status.fromThrowable)
       .provide(Has(log) ++ Has(subscriptionManager) ++ Has(reportRepository))
   }
 }
