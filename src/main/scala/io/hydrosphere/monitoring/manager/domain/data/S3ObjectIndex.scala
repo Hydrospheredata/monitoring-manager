@@ -1,7 +1,6 @@
 package io.hydrosphere.monitoring.manager.domain.data
 
 import io.hydrosphere.monitoring.manager.domain.data.S3ObjectIndex.IndexKey
-import io.hydrosphere.monitoring.manager.domain.model.Model.{ModelName, ModelVersion}
 import io.hydrosphere.monitoring.manager.domain.plugin.Plugin.PluginId
 import io.hydrosphere.monitoring.manager.util.{URI, ZDeadline}
 import zio.clock.Clock
@@ -9,6 +8,7 @@ import zio.macros.accessible
 import zio.{Ref, ZIO, ZRef}
 
 import java.time.Instant
+import scala.concurrent.duration._
 
 @accessible
 trait S3ObjectIndex {
@@ -29,7 +29,8 @@ object S3ObjectIndex {
   val layer = make().toLayer
 }
 
-case class S3ObjectIndexImpl(state: Ref[Map[IndexKey, ZDeadline]]) extends S3ObjectIndex {
+case class S3ObjectIndexImpl(state: Ref[Map[IndexKey, ZDeadline]], deadlineAfter: FiniteDuration = 1.minute)
+    extends S3ObjectIndex {
   def isNew(pluginId: PluginId, obj: S3Ref): ZIO[Clock, Throwable, Boolean] = {
     val key         = IndexKey(pluginId, obj.fullPath, obj.lastModified)
     val getDeadline = state.get.map(s => s.get(key))
@@ -42,7 +43,12 @@ case class S3ObjectIndexImpl(state: Ref[Map[IndexKey, ZDeadline]]) extends S3Obj
           case false =>
             ZIO(false)
         }
-      case None => ZIO(true)
+      case None =>
+        for {
+          now <- ZDeadline.now
+          deadline = now + deadlineAfter
+          _ <- state.update(s => s + (key -> deadline))
+        } yield true
     }
   }
 }

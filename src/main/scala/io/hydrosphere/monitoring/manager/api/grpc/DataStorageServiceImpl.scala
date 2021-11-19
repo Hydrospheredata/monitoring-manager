@@ -18,15 +18,6 @@ final case class DataStorageServiceImpl(
       request: stream.Stream[Status, GetInferenceDataUpdatesRequest]
   ) = {
     //noinspection SimplifyTapInspection (bug in idea-zio)
-    val ackFbr = request
-      .mapError(_.asRuntimeException())
-      .tap(req => log.debug(s"Got request: ${req.pluginId} ack=${req.ack.isDefined}"))
-      .tap(ReportService.addReport(_).either)
-      .tapError(err => log.throwable("Error while handling plugin request", err))
-      .mapError(Status.fromThrowable)
-      .runDrain
-      .fork
-
     val a = request
       .mapError(_.asRuntimeException())
       .tap(req => log.debug(s"Got request: ${req.pluginId} ack=${req.ack.isDefined}"))

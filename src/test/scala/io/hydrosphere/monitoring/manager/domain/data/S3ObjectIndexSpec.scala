@@ -1,10 +1,9 @@
 package io.hydrosphere.monitoring.manager.domain.data
 
+import io.hydrosphere.monitoring.manager.GenericUnitTest
 import io.hydrosphere.monitoring.manager.domain.data.S3ObjectIndex.IndexKey
 import io.hydrosphere.monitoring.manager.util.URI.Context
 import io.hydrosphere.monitoring.manager.util.ZDeadline
-import io.hydrosphere.monitoring.manager.{GenericUnitTest, Layers}
-import zio.logging.Logger
 import zio.test.environment.TestClock
 import zio.test.{assertM, Assertion}
 import zio.{clock, Has, ZIO, ZRef}
@@ -34,7 +33,7 @@ object S3ObjectIndexSpec extends GenericUnitTest {
     testM("should identify new objects") {
       val newObj = S3Ref(uri"s3://newnewnew", Instant.now())
       val res    = S3ObjectIndex.isNew("plugin-1", newObj)
-      assertM(res)(Assertion.isTrue)
+      assertM(res.zip(res))(Assertion.equalTo(true -> false))
     },
     testM("should identify seen objects with overdue deadline") {
       val p = for {
