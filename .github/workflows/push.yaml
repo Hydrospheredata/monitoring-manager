@@ -69,7 +69,9 @@ jobs:
         run: "sbt docker:publishLocal"
 
       - name: Retag image
+        shell: bash
         run: "docker tag ${{ env.IMAGE }}:dev ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest"
 
       - name: Push image
+        shell: bash
         run: "docker push ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest"

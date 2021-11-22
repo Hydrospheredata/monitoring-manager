@@ -13,7 +13,6 @@ runs:
       uses: olafurpg/setup-scala@v11
       with:
         java-version: ${{ inputs.java-version }}
-        # adopt@1.11
 
     - name: Restore cache
       uses: actions/cache@v2.1.6
@@ -25,7 +24,9 @@ runs:
 
     - name: Initialize project
       if: steps.restore-cache.outputs.cache-hit != 'true'
+      shell: bash
       run: "sbt initialize"
   
     - name: Run tests
+      shell: bash
       run: "sbt test"  
