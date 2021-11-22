@@ -2,6 +2,7 @@ package io.hydrosphere.monitoring.manager.api.http
 
 import io.hydrosphere.monitoring.manager.domain.plugin.{PluginRepository, PluginService}
 import io.hydrosphere.monitoring.manager.util.UriUtil
+import sttp.capabilities.zio.ZioStreams
 import sttp.client3._
 import sttp.client3.asynchttpclient.zio.SttpClient
 import zio._
@@ -30,6 +31,7 @@ case class PluginProxyEndpoint(sttpClient: SttpClient.Service, pluginRepository:
           .method(method, fullAddr)
           .headers(headers: _*)
           .body(body)
+          .response(asStreamUnsafe(ZioStreams))
         resp <- sttpClient.send(req)
       } yield resp.body.map(b => (resp.code, resp.headers.toList, b))
     }
@@ -54,7 +56,7 @@ object PluginProxyEndpoint extends GenericEndpoint {
     .in(byteArrayBody)
     .out(statusCode)
     .out(headers)
-    .out(stringBody)
+    .out(streamBinaryBody(ZioStreams))
     .errorOut(stringBody)
 
   val endpoints = List(proxyRequestDesc)
