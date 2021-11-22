@@ -1,0 +1,31 @@
+name: 'Tests'
+description: 'Setup Scala & Run Tests'
+inputs:
+  java-version:
+    description: java version
+    required: true
+
+runs:
+  using: "composite"
+
+  steps:      
+    - name: Setup scala
+      uses: olafurpg/setup-scala@v11
+      with:
+        java-version: ${{ inputs.java-version }}
+        # adopt@1.11
+
+    - name: Restore cache
+      uses: actions/cache@v2.1.6
+      with:
+        path: |
+          ~/.ivy2/cache
+          ~/.sbt
+        key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt', '**/Dependencies.scala') }}
+
+    - name: Initialize project
+      if: steps.restore-cache.outputs.cache-hit != 'true'
+      run: "sbt initialize"
+  
+    - name: Run tests
+      run: "sbt test"  
