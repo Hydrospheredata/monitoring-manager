@@ -61,7 +61,8 @@ object Dependencies {
     "com.beachape" %% "enumeratum-circe" % enumeratumVersion,
     "com.beachape" %% "enumeratum-quill" % enumeratumVersion,
     "dev.optics"   %% "monocle-core"     % monocleVersion,
-    "dev.optics"   %% "monocle-macro"    % monocleVersion
+    "dev.optics"   %% "monocle-macro"    % monocleVersion,
+    "dev.zio" %% "zio-metrics-prometheus" % "1.0.13"
   )
 
   final val test = Seq(
