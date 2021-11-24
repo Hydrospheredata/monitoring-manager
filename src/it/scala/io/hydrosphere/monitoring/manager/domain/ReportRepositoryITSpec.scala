@@ -21,7 +21,13 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
     MigrationAspects.pgLayer ++
       repoLayer
 
-  val i     = Instant.now()
+  val i = Instant.now()
+  val featureReports = Some(
+    Map(
+      "a" -> Seq(Report.ByFeature("ok", true), Report.ByFeature("really-good", true)),
+      "b" -> Seq(Report.ByFeature("not-ok", false), Report.ByFeature("really-not-good", false))
+    )
+  )
   val stats = BatchStats(1, "ok", 1)
   val spec = (suite("ReportRepository")(
     testM("should create a report") {
@@ -33,14 +39,11 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
         modelVersion = 1,
         file = path,
         fileModifiedAt = i,
-        featureReports = Map(
-          "a" -> Seq(Report.ByFeature("ok", true), Report.ByFeature("really-good", true)),
-          "b" -> Seq(Report.ByFeature("not-ok", false), Report.ByFeature("really-not-good", false))
-        ),
+        featureReports = featureReports,
         batchStats = Some(stats)
       )
       val res = ReportRepository.create(report)
-      assertM(res)(Assertion.equalTo(Chunk(report)))
+      assertM(res)(Assertion.equalTo(report))
     },
     testM("should return specific report") {
       val report = Report(
@@ -49,10 +52,7 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
         modelVersion = 2,
         file = uri"s3://test/specific.csv",
         fileModifiedAt = i,
-        featureReports = Map(
-          "a" -> Seq(Report.ByFeature("ok", true), Report.ByFeature("really-good", true)),
-          "b" -> Seq(Report.ByFeature("not-ok", false), Report.ByFeature("really-not-good", false))
-        ),
+        featureReports = featureReports,
         batchStats = Some(stats)
       )
       val res =
@@ -67,10 +67,7 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
           modelVersion = 3,
           file = uri"s3://test/specific1.csv",
           fileModifiedAt = i,
-          featureReports = Map(
-            "a" -> Seq(Report.ByFeature("ok", true), Report.ByFeature("really-good", true)),
-            "b" -> Seq(Report.ByFeature("not-ok", false), Report.ByFeature("really-not-good", false))
-          ),
+          featureReports = featureReports,
           batchStats = Some(stats)
         ),
         Report(
@@ -79,10 +76,7 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
           modelVersion = 3,
           file = uri"s3://test/specific1.csv",
           fileModifiedAt = i,
-          featureReports = Map(
-            "a" -> Seq(Report.ByFeature("ok", true), Report.ByFeature("really-good", true)),
-            "b" -> Seq(Report.ByFeature("not-ok", false), Report.ByFeature("really-not-good", false))
-          ),
+          featureReports = featureReports,
           batchStats = Some(stats)
         ),
         Report(
@@ -91,10 +85,7 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
           modelVersion = 3,
           file = uri"s3://test/specific2.csv",
           fileModifiedAt = i,
-          featureReports = Map(
-            "a" -> Seq(Report.ByFeature("ok", true), Report.ByFeature("really-good", true)),
-            "b" -> Seq(Report.ByFeature("not-ok", false), Report.ByFeature("really-not-good", false))
-          ),
+          featureReports = featureReports,
           batchStats = Some(stats)
         )
       )
@@ -111,10 +102,7 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
         modelVersion = 1,
         file = path,
         fileModifiedAt = i,
-        featureReports = Map(
-          "a" -> Seq(Report.ByFeature("ok", true), Report.ByFeature("really-good", true)),
-          "b" -> Seq(Report.ByFeature("not-ok", false), Report.ByFeature("really-not-good", false))
-        ),
+        featureReports = featureReports,
         batchStats = Some(stats)
       )
       val res = ReportRepository.create(report) *> ReportRepository
