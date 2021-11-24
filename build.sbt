@@ -1,5 +1,5 @@
 name         := "monitoring-manager"
-version      := "latest"
+version      := "dev"
 scalaVersion := "2.13.6"
 libraryDependencies ++= Dependencies.all
 Compile / packageBin / mainClass := Some("io.hydrosphere.monitoring.manager.Main")
