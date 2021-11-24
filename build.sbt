@@ -29,4 +29,4 @@ dockerBaseImage := "openjdk:11"
 
 addCommandAlias("testAll", ";test;it:test")
 
-addCommandAlias("build", ";doc;openapi;docker:publishLocal")
+addCommandAlias("build", ";openapi;docker:publishLocal")

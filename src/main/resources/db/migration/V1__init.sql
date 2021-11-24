@@ -27,6 +27,6 @@ CREATE TABLE hydrosphere.report(
     modelVersion NUMERIC NOT NULL,
     file TEXT NOT NULL,
     fileModifiedAt TIMESTAMP NOT NULL,
-    batchStats TEXT NOT NULL,
-    featureReports TEXT NOT NULL
+    batchStats TEXT,
+    featureReports TEXT
 );

@@ -2,6 +2,7 @@ package io.hydrosphere.monitoring.manager.domain
 
 import com.dimafeng.testcontainers.PostgreSQLContainer
 import io.hydrosphere.monitoring.manager.db.DatabaseContext
+import io.hydrosphere.monitoring.manager.domain.data.S3Ref
 import io.hydrosphere.monitoring.manager.domain.report.Report.BatchStats
 import io.hydrosphere.monitoring.manager.domain.report.{Report, ReportRepository, ReportRepositoryImpl}
 import io.hydrosphere.monitoring.manager.util.URI.Context
@@ -24,11 +25,13 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
   val stats = BatchStats(1, "ok", 1)
   val spec = (suite("ReportRepository")(
     testM("should create a report") {
+      val path =
+        uri"s3://test/file.csv"
       val report = Report(
         pluginId = "test-plugin",
         modelName = "model",
         modelVersion = 1,
-        file = uri"s3://test/file.csv",
+        file = path,
         fileModifiedAt = i,
         featureReports = Map(
           "a" -> Seq(Report.ByFeature("ok", true), Report.ByFeature("really-good", true)),
@@ -37,7 +40,7 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
         batchStats = Some(stats)
       )
       val res = ReportRepository.create(report)
-      assertM(res)(Assertion.equalTo(report))
+      assertM(res)(Assertion.equalTo(Chunk(report)))
     },
     testM("should return specific report") {
       val report = Report(
@@ -99,6 +102,25 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
       val prog =
         ZIO.foreach_(reports)(ReportRepository.create) *> ReportRepository.peekForModelVersion("model", 3).runCollect
       assertM(prog.map(_.toSet))(Assertion.equalTo(expected))
+    },
+    testM("should check if plugin submited a report") {
+      val path = uri"s3://test/file.csv"
+      val report = Report(
+        pluginId = "test-plugin",
+        modelName = "model",
+        modelVersion = 1,
+        file = path,
+        fileModifiedAt = i,
+        featureReports = Map(
+          "a" -> Seq(Report.ByFeature("ok", true), Report.ByFeature("really-good", true)),
+          "b" -> Seq(Report.ByFeature("not-ok", false), Report.ByFeature("really-not-good", false))
+        ),
+        batchStats = Some(stats)
+      )
+      val res = ReportRepository.create(report) *> ReportRepository
+        .exists("test-plugin", S3Ref(path, i))
+        .zip(ReportRepository.exists("test-plugin-1", S3Ref(path, i)))
+      assertM(res)(Assertion.equalTo(true -> false))
     }
   ) @@ MigrationAspects.migrate()).provideCustomLayerShared(testLayer)
 }

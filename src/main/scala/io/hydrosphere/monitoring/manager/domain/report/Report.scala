@@ -16,7 +16,7 @@ case class Report(
     modelVersion: ModelVersion,
     file: URI,
     fileModifiedAt: Instant,
-    featureReports: FeatureReports,
+    featureReports: Option[FeatureReports],
     batchStats: Option[BatchStats]
 )
 
@@ -68,7 +68,7 @@ object Report {
       modelVersion = ack.modelVersion,
       file = fileKey,
       fileModifiedAt = timestamp.asJavaInstant,
-      featureReports = ack.featureReports.map { case (key, proto) => key -> proto.rows.map(ByFeature.fromProto) },
+      featureReports = Some(ack.featureReports.map { case (key, proto) => key -> proto.rows.map(ByFeature.fromProto) }),
       batchStats = ack.batchStats.map(BatchStats.fromProto)
     )
 }

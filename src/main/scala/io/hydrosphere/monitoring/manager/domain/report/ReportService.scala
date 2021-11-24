@@ -17,5 +17,6 @@ object ReportService {
 
   def addReport(
       req: GetInferenceDataUpdatesRequest
-  ): ZIO[Has[ReportRepository] with Logging, Throwable, Report] = parseReport(req) >>= ReportRepository.create
+  ): ZIO[Has[ReportRepository] with Logging, Throwable, Report] =
+    (parseReport(req) >>= ReportRepository.create).tapError(err => log.throwable("Error while submitting report", err))
 }
