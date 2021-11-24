@@ -165,9 +165,10 @@ paths:
         '200':
           description: ''
           content:
-            text/plain:
+            application/octet-stream:
               schema:
                 type: string
+                format: binary
         '400':
           description: 'Invalid value, Invalid value for: headers, Invalid value for:
             path, Invalid value for: query parameters, Invalid value for: body'
@@ -342,7 +343,6 @@ components:
       - modelVersion
       - file
       - fileModifiedAt
-      - featureReports
       type: object
       properties:
         pluginId:
