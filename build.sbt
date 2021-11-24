@@ -25,8 +25,7 @@ Compile / mainClass := Some("io.hydrosphere.monitoring.manager.Main")
 
 addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
 
-dockerBaseImage      := "openjdk:11"
-Docker / packageName := "hydrosphere/monitoring-manager"
+dockerBaseImage := "openjdk:11"
 
 addCommandAlias("testAll", ";test;it:test")
 
