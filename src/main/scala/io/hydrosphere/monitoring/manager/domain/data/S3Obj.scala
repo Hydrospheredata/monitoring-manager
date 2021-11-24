@@ -1,12 +1,18 @@
 package io.hydrosphere.monitoring.manager.domain.data
 
+import io.circe.generic.JsonCodec
 import io.github.vigoo.zioaws.s3.model.S3Object
-import io.hydrosphere.monitoring.manager.util.UriUtil
+import io.hydrosphere.monitoring.manager.util.{URI, UriUtil}
 
 import java.time.Instant
 
-case class S3Obj(bucket: String, key: String, lastModified: Instant) {
-  def fullPath = UriUtil.s3Path(bucket, key)
+@JsonCodec
+case class S3Ref(fullPath: URI, lastModified: Instant)
+
+@JsonCodec
+case class S3Obj private (bucket: String, key: String, lastModified: Instant) {
+  val fullPath = URI(UriUtil.s3Path(bucket, key))
+  def toRef    = S3Ref(fullPath, lastModified)
 }
 
 object S3Obj {

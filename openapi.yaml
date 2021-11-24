@@ -105,8 +105,154 @@ paths:
             text/plain:
               schema:
                 type: string
+  /api/v1/model/{modelName}/{modelVersion}/reports:
+    get:
+      tags:
+      - Model
+      operationId: listAssociatedReports
+      parameters:
+      - name: modelName
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: modelVersion
+        in: path
+        required: true
+        schema:
+          type: integer
+          format: int64
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+        '400':
+          description: 'Invalid value for: path parameter modelVersion'
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/v1/plugin-proxy/{pluginName}:
+    get:
+      tags:
+      - Plugin proxy
+      operationId: proxyRequest
+      parameters:
+      - name: pluginName
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        content:
+          application/octet-stream:
+            schema:
+              type: string
+              format: binary
+        required: true
+      responses:
+        '200':
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+        '400':
+          description: 'Invalid value, Invalid value for: headers, Invalid value for:
+            path, Invalid value for: query parameters, Invalid value for: body'
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
+  /api/v1/report:
+    get:
+      tags:
+      - Report
+      operationId: getReportDesc
+      parameters:
+      - name: modelName
+        in: query
+        required: true
+        schema:
+          type: string
+      - name: modelVersion
+        in: query
+        required: true
+        schema:
+          type: integer
+          format: int64
+      - name: file
+        in: query
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: ''
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Report'
+        '400':
+          description: 'Invalid value for: query parameter modelName, Invalid value
+            for: query parameter modelVersion, Invalid value for: query parameter
+            file'
+          content:
+            text/plain:
+              schema:
+                type: string
+        default:
+          description: ''
+          content:
+            text/plain:
+              schema:
+                type: string
 components:
   schemas:
+    BatchStats:
+      required:
+      - susRatio
+      - susVerdict
+      - failRatio
+      type: object
+      properties:
+        susRatio:
+          type: number
+          format: double
+        susVerdict:
+          type: string
+        failRatio:
+          type: number
+          format: double
+    ByFeature:
+      required:
+      - description
+      - isGood
+      type: object
+      properties:
+        description:
+          type: string
+        isGood:
+          type: boolean
     Field:
       required:
       - name
@@ -125,6 +271,12 @@ components:
           type: string
         profile:
           type: string
+    Map_Seq_ByFeature:
+      type: object
+      additionalProperties:
+        type: array
+        items:
+          $ref: '#/components/schemas/ByFeature'
     Map_String:
       type: object
       additionalProperties:
@@ -164,15 +316,14 @@ components:
           $ref: '#/components/schemas/PluginInfo'
     PluginInfo:
       required:
-      - iconUrl
+      - addr
       - routePath
       - ngModuleName
-      - remoteEntry
       - remoteName
       - exposedModule
       type: object
       properties:
-        iconUrl:
+        addr:
           type: string
         routePath:
           type: string
@@ -184,6 +335,32 @@ components:
           type: string
         exposedModule:
           type: string
+    Report:
+      required:
+      - pluginId
+      - modelName
+      - modelVersion
+      - file
+      - fileModifiedAt
+      - featureReports
+      type: object
+      properties:
+        pluginId:
+          type: string
+        modelName:
+          type: string
+        modelVersion:
+          type: integer
+          format: int64
+        file:
+          type: string
+        fileModifiedAt:
+          type: string
+          format: date-time
+        featureReports:
+          $ref: '#/components/schemas/Map_Seq_ByFeature'
+        batchStats:
+          $ref: '#/components/schemas/BatchStats'
     Signature:
       type: object
       properties:
@@ -191,7 +368,7 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Field'
-        output:
+        outputs:
           type: array
           items:
             $ref: '#/components/schemas/Field'

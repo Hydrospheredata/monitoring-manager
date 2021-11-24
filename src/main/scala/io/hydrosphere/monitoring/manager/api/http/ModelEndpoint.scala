@@ -1,10 +1,16 @@
 package io.hydrosphere.monitoring.manager.api.http
 
+import io.hydrosphere.monitoring.manager.api.http.ModelEndpoint.listAssociatedReportsDesc
+import io.hydrosphere.monitoring.manager.api.http.ReportEndpoint.{jsonBody, path, reportEndpoint, throwableBody}
+import io.hydrosphere.monitoring.manager.domain.model.Model.{ModelName, ModelVersion}
 import io.hydrosphere.monitoring.manager.domain.model._
+import io.hydrosphere.monitoring.manager.domain.report.ReportRepository
+import io.hydrosphere.monitoring.manager.util.URI
 import zio._
 
 case class ModelEndpoint(
-    modelRepo: ModelRepository
+    modelRepo: ModelRepository,
+    reportRepository: ReportRepository
 ) extends GenericEndpoint {
 
   val modelList = ModelEndpoint.modelListDesc
@@ -24,7 +30,11 @@ case class ModelEndpoint(
           .either
       )
 
-  val serverEndpoints = List(modelList, modelAdd)
+  val listAssociatedReports = listAssociatedReportsDesc.serverLogic[Task] { case (name, version) =>
+    reportRepository.peekForModelVersion(name, version).runCollect.either
+  }
+
+  val serverEndpoints = List(modelList, modelAdd, listAssociatedReports)
 }
 
 object ModelEndpoint extends GenericEndpoint {
@@ -47,7 +57,16 @@ object ModelEndpoint extends GenericEndpoint {
     .out(jsonBody[Model])
     .errorOut(throwableBody)
 
-  val endpoints = List(modelListDesc, modelAddDesc)
+  val listAssociatedReportsDesc = modelEndpoint
+    .name("listAssociatedReports")
+    .in(path[ModelName]("modelName"))
+    .in(path[ModelVersion]("modelVersion"))
+    .in("reports")
+    .get
+    .out(jsonBody[Seq[URI]])
+    .errorOut(throwableBody)
+
+  val endpoints = List(modelListDesc, modelAddDesc, listAssociatedReportsDesc)
 
   val layer = (ModelEndpoint.apply _).toLayer
 }

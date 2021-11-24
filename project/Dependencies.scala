@@ -14,8 +14,9 @@ object Dependencies {
   final val monocleVersion    = "3.1.0"
 
   final val api = Seq(
-    "io.grpc"               % "grpc-netty"           % scalapb.compiler.Version.grpcJavaVersion,
-    "com.thesamet.scalapb" %% "scalapb-runtime-grpc" % scalapb.compiler.Version.scalapbVersion,
+    "io.grpc"                      % "grpc-netty"               % scalapb.compiler.Version.grpcJavaVersion,
+    "com.thesamet.scalapb"        %% "scalapb-runtime-grpc"     % scalapb.compiler.Version.scalapbVersion,
+    "com.google.api.grpc"          % "googleapis-common-protos" % "0.0.3" % "protobuf",
     "com.softwaremill.sttp.tapir" %% "tapir-zio-http"           % tapirVersion,
     "com.softwaremill.sttp.tapir" %% "tapir-json-circe"         % tapirVersion,
     "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs"       % tapirVersion,
@@ -56,18 +57,19 @@ object Dependencies {
     "org.apache.logging.log4j" % "log4j-slf4j-impl"    % log4jVersion,
     "dev.zio"                 %% "zio-logging"         % zioLogVersion,
     "dev.zio"                 %% "zio-logging-slf4j"   % zioLogVersion,
-    "com.spotify"   % "docker-client"    % "8.16.0" exclude ("ch.qos.logback", "logback-classic"),
-    "com.beachape" %% "enumeratum"       % enumeratumVersion,
-    "com.beachape" %% "enumeratum-circe" % enumeratumVersion,
-    "com.beachape" %% "enumeratum-quill" % enumeratumVersion,
-    "dev.optics"   %% "monocle-core"     % monocleVersion,
-    "dev.optics"   %% "monocle-macro"    % monocleVersion
+    "com.spotify"              % "docker-client"       % "8.16.0" exclude ("ch.qos.logback", "logback-classic"),
+    "com.beachape"            %% "enumeratum"          % enumeratumVersion,
+    "com.beachape"            %% "enumeratum-circe"    % enumeratumVersion,
+    "com.beachape"            %% "enumeratum-quill"    % enumeratumVersion,
+    "dev.optics"              %% "monocle-core"        % monocleVersion,
+    "dev.optics"              %% "monocle-macro"       % monocleVersion
   )
 
   final val test = Seq(
-    "dev.zio" %% "zio-test"       % zioVersion,
-    "dev.zio" %% "zio-test-sbt"   % zioVersion,
-    "dev.zio" %% "zio-test-junit" % zioVersion
+    "dev.zio"      %% "zio-test"                        % zioVersion,
+    "dev.zio"      %% "zio-test-sbt"                    % zioVersion,
+    "dev.zio"      %% "zio-test-junit"                  % zioVersion,
+    "com.dimafeng" %% "testcontainers-scala-postgresql" % "0.39.11"
   ).map(_ % "test,it")
 
   final val all = effect ++ utils ++ data ++ api ++ http ++ test
