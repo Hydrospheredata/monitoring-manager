@@ -11,7 +11,75 @@ jobs:
       - name: Checkout Repo
         uses: actions/checkout@v2
       
-      - name: Run Scala Tests
-        uses: ./.github/actions/tests
+      - name: Setup scala
+        uses: olafurpg/setup-scala@v11
         with:
           java-version: adopt@1.11
+
+      - name: Restore cache
+        uses: actions/cache@v2.1.6
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt', '**/Dependencies.scala') }}
+
+      - name: Initialize project
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: "sbt initialize"
+    
+      - name: Run unit tests
+        shell: bash
+        run: "sbt test"
+
+      - name: Run integration tests
+        shell: bash
+        run: "sbt it:test"
+
+  Build_image:
+    runs-on: ubuntu-20.04
+    env:
+      IMAGE: monitoring-manager # name of the built image
+      REGISTRY: hydrosphere
+    
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+
+      - name: Setup scala
+        uses: olafurpg/setup-scala@v11
+        with:
+          java-version: adopt@1.11
+      
+      - name: Restore cache
+        uses: actions/cache@v2.1.6
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt', '**/Dependencies.scala') }}
+
+      - name: Initialize project
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        shell: bash
+        run: "sbt initialize"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2.1.6
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx-${{ github.sha }}
+          restore-keys: |
+            ${{ runner.os }}-buildx-       
+      
+      - name: Build docker image
+        shell: bash
+        run: "sbt docker:publishLocal"
+
+      - name: Retag image
+        shell: bash
+        run: "docker tag ${{ env.IMAGE }}:dev ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest"
