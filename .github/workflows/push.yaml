@@ -1,4 +1,4 @@
-name: Test, Build & Push Image
+name: Build & Push Image
 
 on:
   push:
@@ -6,20 +6,7 @@ on:
       - master
 
 jobs:
-  Test:
-    runs-on: ubuntu-20.04
-
-    steps:
-      - name: Checkout Repo
-        uses: actions/checkout@v2
-      
-      - name: Run Scala Tests
-        uses: ./.github/actions/tests
-        with:
-          java-version: adopt@1.11
-
   Build_Push:
-    needs: Test
     runs-on: ubuntu-20.04
     env:
       IMAGE: monitoring-manager # name of the built image
