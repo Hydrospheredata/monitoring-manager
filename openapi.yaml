@@ -228,6 +228,21 @@ paths:
                 type: string
 components:
   schemas:
+    BatchStats:
+      required:
+      - susRatio
+      - susVerdict
+      - failRatio
+      type: object
+      properties:
+        susRatio:
+          type: number
+          format: double
+        susVerdict:
+          type: string
+        failRatio:
+          type: number
+          format: double
     ByFeature:
       required:
       - description
@@ -238,25 +253,6 @@ components:
           type: string
         isGood:
           type: boolean
-    ByRow:
-      required:
-      - rowId
-      - col
-      - description
-      - isGood
-      - value
-      type: object
-      properties:
-        rowId:
-          type: integer
-          format: int64
-        col:
-          type: string
-        description:
-          type: string
-        isGood:
-          type: boolean
-        value: {}
     Field:
       required:
       - name
@@ -361,12 +357,10 @@ components:
         fileModifiedAt:
           type: string
           format: date-time
-        rowReports:
-          type: array
-          items:
-            $ref: '#/components/schemas/ByRow'
         featureReports:
           $ref: '#/components/schemas/Map_Seq_ByFeature'
+        batchStats:
+          $ref: '#/components/schemas/BatchStats'
     Signature:
       type: object
       properties:

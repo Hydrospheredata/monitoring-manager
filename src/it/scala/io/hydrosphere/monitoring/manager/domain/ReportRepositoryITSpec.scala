@@ -1,30 +1,27 @@
 package io.hydrosphere.monitoring.manager.domain
 
 import com.dimafeng.testcontainers.PostgreSQLContainer
-import io.circe.Json
 import io.hydrosphere.monitoring.manager.db.DatabaseContext
+import io.hydrosphere.monitoring.manager.domain.report.Report.BatchStats
 import io.hydrosphere.monitoring.manager.domain.report.{Report, ReportRepository, ReportRepositoryImpl}
-import io.hydrosphere.monitoring.manager.util.URI
 import io.hydrosphere.monitoring.manager.util.URI.Context
-import io.hydrosphere.monitoring.manager.{GenericIntegrationTest, MigrationAspects, TestContainer}
-import zio.blocking.Blocking
+import io.hydrosphere.monitoring.manager.{GenericIntegrationTest, MigrationAspects}
 import zio.test._
 import zio.{Chunk, Has, ZIO, ZLayer}
 
 import java.time.Instant
 
-object Deps {
-  val pgLayer: ZLayer[Any, Nothing, Has[PostgreSQLContainer]] = Blocking.live >>> TestContainer.postgres
+object ReportRepositoryITSpec extends GenericIntegrationTest {
+
   val repoLayer: ZLayer[Any, Nothing, Has[ReportRepository]] =
-    (pgLayer >>> MigrationAspects.dsLayer) ++ DatabaseContext.layer >>> ReportRepositoryImpl.layer
+    (MigrationAspects.pgLayer >>> MigrationAspects.dsLayer) ++ DatabaseContext.layer >>> ReportRepositoryImpl.layer
 
   val testLayer: ZLayer[Any, Nothing, Has[PostgreSQLContainer] with Has[ReportRepository]] =
-    pgLayer ++
+    MigrationAspects.pgLayer ++
       repoLayer
-}
 
-object ReportRepositoryITSpec extends GenericIntegrationTest {
-  val i = Instant.now()
+  val i     = Instant.now()
+  val stats = BatchStats(1, "ok", 1)
   val spec = (suite("ReportRepository")(
     testM("should create a report") {
       val report = Report(
@@ -33,26 +30,11 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
         modelVersion = 1,
         file = uri"s3://test/file.csv",
         fileModifiedAt = i,
-        rowReports = Seq(
-          Report.ByRow(
-            rowId = 1,
-            col = "a",
-            description = "ok",
-            isGood = true,
-            value = Json.fromDoubleOrNull(42)
-          ),
-          Report.ByRow(
-            rowId = 2,
-            col = "b",
-            description = "not ok",
-            isGood = false,
-            value = Json.fromString("hey there")
-          )
-        ),
         featureReports = Map(
           "a" -> Seq(Report.ByFeature("ok", true), Report.ByFeature("really-good", true)),
           "b" -> Seq(Report.ByFeature("not-ok", false), Report.ByFeature("really-not-good", false))
-        )
+        ),
+        batchStats = Some(stats)
       )
       val res = ReportRepository.create(report)
       assertM(res)(Assertion.equalTo(report))
@@ -64,26 +46,11 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
         modelVersion = 2,
         file = uri"s3://test/specific.csv",
         fileModifiedAt = i,
-        rowReports = Seq(
-          Report.ByRow(
-            rowId = 1,
-            col = "a",
-            description = "ok",
-            isGood = true,
-            value = Json.fromDoubleOrNull(42)
-          ),
-          Report.ByRow(
-            rowId = 2,
-            col = "b",
-            description = "not ok",
-            isGood = false,
-            value = Json.fromString("hey there")
-          )
-        ),
         featureReports = Map(
           "a" -> Seq(Report.ByFeature("ok", true), Report.ByFeature("really-good", true)),
           "b" -> Seq(Report.ByFeature("not-ok", false), Report.ByFeature("really-not-good", false))
-        )
+        ),
+        batchStats = Some(stats)
       )
       val res =
         ReportRepository.create(report) *> ReportRepository.get("model", 2, uri"s3://test/specific.csv").runCollect
@@ -97,26 +64,11 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
           modelVersion = 3,
           file = uri"s3://test/specific1.csv",
           fileModifiedAt = i,
-          rowReports = Seq(
-            Report.ByRow(
-              rowId = 1,
-              col = "a",
-              description = "ok",
-              isGood = true,
-              value = Json.fromDoubleOrNull(42)
-            ),
-            Report.ByRow(
-              rowId = 2,
-              col = "b",
-              description = "not ok",
-              isGood = false,
-              value = Json.fromString("hey there")
-            )
-          ),
           featureReports = Map(
             "a" -> Seq(Report.ByFeature("ok", true), Report.ByFeature("really-good", true)),
             "b" -> Seq(Report.ByFeature("not-ok", false), Report.ByFeature("really-not-good", false))
-          )
+          ),
+          batchStats = Some(stats)
         ),
         Report(
           pluginId = "test-plugin-2",
@@ -124,26 +76,11 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
           modelVersion = 3,
           file = uri"s3://test/specific1.csv",
           fileModifiedAt = i,
-          rowReports = Seq(
-            Report.ByRow(
-              rowId = 1,
-              col = "a",
-              description = "ok",
-              isGood = true,
-              value = Json.fromDoubleOrNull(42)
-            ),
-            Report.ByRow(
-              rowId = 2,
-              col = "b",
-              description = "not ok",
-              isGood = false,
-              value = Json.fromString("hey there")
-            )
-          ),
           featureReports = Map(
             "a" -> Seq(Report.ByFeature("ok", true), Report.ByFeature("really-good", true)),
             "b" -> Seq(Report.ByFeature("not-ok", false), Report.ByFeature("really-not-good", false))
-          )
+          ),
+          batchStats = Some(stats)
         ),
         Report(
           pluginId = "test-plugin-1",
@@ -151,26 +88,11 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
           modelVersion = 3,
           file = uri"s3://test/specific2.csv",
           fileModifiedAt = i,
-          rowReports = Seq(
-            Report.ByRow(
-              rowId = 1,
-              col = "a",
-              description = "ok",
-              isGood = true,
-              value = Json.fromDoubleOrNull(42)
-            ),
-            Report.ByRow(
-              rowId = 2,
-              col = "b",
-              description = "not ok",
-              isGood = false,
-              value = Json.fromString("hey there")
-            )
-          ),
           featureReports = Map(
             "a" -> Seq(Report.ByFeature("ok", true), Report.ByFeature("really-good", true)),
             "b" -> Seq(Report.ByFeature("not-ok", false), Report.ByFeature("really-not-good", false))
-          )
+          ),
+          batchStats = Some(stats)
         )
       )
       val expected = Set(uri"s3://test/specific1.csv", uri"s3://test/specific2.csv")
@@ -178,5 +100,5 @@ object ReportRepositoryITSpec extends GenericIntegrationTest {
         ZIO.foreach_(reports)(ReportRepository.create) *> ReportRepository.peekForModelVersion("model", 3).runCollect
       assertM(prog.map(_.toSet))(Assertion.equalTo(expected))
     }
-  ) @@ MigrationAspects.migrate()).provideCustomLayerShared(Deps.testLayer)
+  ) @@ MigrationAspects.migrate()).provideCustomLayerShared(testLayer)
 }

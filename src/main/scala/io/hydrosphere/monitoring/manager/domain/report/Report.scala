@@ -1,15 +1,13 @@
 package io.hydrosphere.monitoring.manager.domain.report
 
-import io.circe.Json
 import io.circe.generic.JsonCodec
 import io.hydrosphere.monitoring.manager.domain.model.Model.{ModelName, ModelVersion}
 import io.hydrosphere.monitoring.manager.domain.plugin.Plugin.PluginId
-import io.hydrosphere.monitoring.manager.domain.report.Report.{FeatureReports, RowReports}
+import io.hydrosphere.monitoring.manager.domain.report.Report.{BatchStats, FeatureReports}
 import io.hydrosphere.monitoring.manager.util.{QuillJson, URI}
-import monitoring_manager.monitoring_manager.RowReport.Value
-import monitoring_manager.monitoring_manager.{AnalyzedAck, FRRow, RowReport}
+import monitoring_manager.monitoring_manager.{AnalyzedAck, BatchStatistics, FRRow}
 
-import java.time.{Instant, OffsetDateTime}
+import java.time.Instant
 
 @JsonCodec
 case class Report(
@@ -18,43 +16,30 @@ case class Report(
     modelVersion: ModelVersion,
     file: URI,
     fileModifiedAt: Instant,
-    rowReports: RowReports,
-    featureReports: FeatureReports
+    featureReports: FeatureReports,
+    batchStats: Option[BatchStats]
 )
 
 object Report {
-  type RowReports = Seq[Report.ByRow]
-  implicit val rrDecoder = QuillJson.jsonDecoder[RowReports]
-  implicit val rrEncoder = QuillJson.jsonEncoder[RowReports]
-
-  type FeatureReports = Map[String, Seq[ByFeature]]
-  implicit val frDecoder = QuillJson.jsonDecoder[FeatureReports]
-  implicit val frEncoder = QuillJson.jsonEncoder[FeatureReports]
-
   @JsonCodec
-  case class ByRow(
-      rowId: Long,
-      col: String,
-      description: String,
-      isGood: Boolean,
-      value: Json
+  case class BatchStats(
+      susRatio: Double,
+      susVerdict: String,
+      failRatio: Double
   )
 
-  object ByRow {
-    def fromProto(proto: RowReport) = ByRow(
-      rowId = proto.rowId,
-      col = proto.col,
-      description = proto.description,
-      isGood = proto.isGood,
-      value = proto.value match {
-        case Value.Empty            => Json.Null
-        case Value.IntVal(value)    => Json.fromLong(value)
-        case Value.StringVal(value) => Json.fromString(value)
-        case Value.DoubleVal(value) => Json.fromDoubleOrString(value)
-        case Value.BoolVal(value)   => Json.fromBoolean(value)
-      }
+  object BatchStats {
+    def fromProto(proto: BatchStatistics) = BatchStats(
+      susRatio = proto.susRatio,
+      susVerdict = proto.susVerdict,
+      failRatio = proto.failRatio
     )
   }
+
+  implicit val bsDecoder = QuillJson.jsonDecoder[BatchStats]
+  implicit val bsEncoder = QuillJson.jsonEncoder[BatchStats]
+
+  type FeatureReports = Map[String, Seq[ByFeature]]
 
   @JsonCodec
   case class ByFeature(
@@ -69,6 +54,9 @@ object Report {
     )
   }
 
+  implicit val frDecoder = QuillJson.jsonDecoder[FeatureReports]
+  implicit val frEncoder = QuillJson.jsonEncoder[FeatureReports]
+
   def fromPluginAck(pluginId: String, ack: AnalyzedAck) =
     for {
       fileObj   <- ack.inferenceDataObj.toRight(".inferenceDataObj field is empty")
@@ -80,7 +68,7 @@ object Report {
       modelVersion = ack.modelVersion,
       file = fileKey,
       fileModifiedAt = timestamp.asJavaInstant,
-      rowReports = ack.rowReports.map(ByRow.fromProto),
-      featureReports = ack.featureReports.map { case (key, proto) => key -> proto.rows.map(ByFeature.fromProto) }
+      featureReports = ack.featureReports.map { case (key, proto) => key -> proto.rows.map(ByFeature.fromProto) },
+      batchStats = ack.batchStats.map(BatchStats.fromProto)
     )
 }

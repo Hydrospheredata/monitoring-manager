@@ -24,6 +24,8 @@ object MigrationAspects {
     dsLayer >>> FlywayClient.layer
   }
 
+  val pgLayer: ZLayer[Any, Nothing, Has[PostgreSQLContainer]] = Blocking.live >>> TestContainer.postgres
+
   def migrate(): TestAspect[Nothing, Blocking with Has[PostgreSQLContainer], Nothing, Any] = {
     val migration = FlywayClient.migrate().provideLayer(ZLayer.identity[Blocking] ++ flywayLayer)
     beforeAll(migration.orDie)

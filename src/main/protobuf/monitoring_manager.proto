@@ -125,21 +125,14 @@ message AnalyzedAck {
   string model_name = 1;
   uint64 model_version = 2;
   DataObject inference_data_obj = 3;
-  repeated RowReport row_reports = 4;
-  map<string, FeatureReport> feature_reports = 5;
+  map<string, FeatureReport> feature_reports = 4;
+  BatchStatistics batch_stats = 5;
 }
 
-message RowReport {
-  uint64 row_id = 1;
-  string col = 2;
-  string description = 3;
-  bool is_good = 4;
-  oneof value {
-    int64 int_val = 10;
-    string string_val = 11;
-    double double_val = 12;
-    bool bool_val = 13;
-  }
+message BatchStatistics {
+  double sus_ratio = 1; // [0, +inf]
+  string sus_verdict = 2;
+  double fail_ratio = 3; // [0, 1]
 }
 
 message FeatureReport {
