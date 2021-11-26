@@ -8,10 +8,10 @@ import io.prometheus.client.exporter.{
   HttpConnectionFactory,
   PushGateway => PPG
 }
-import zio.logging.{log, Logging}
+import zio.logging.{log, Logger, Logging}
 import zio.macros.accessible
 import zio.metrics.prometheus.Registry
-import zio.{Has, Task, ZIO, ZLayer}
+import zio._
 
 import java.net.URL
 
@@ -31,15 +31,16 @@ object PushGateway {
   type Username = String
   type Password = String
 
-  val layer: ZLayer[Has[Option[PushGatewayConfig]] with Logging, Throwable, Has[PushGateway]] =
+  val layer: ZLayer[Logging with Has[Option[PushGatewayConfig]], Throwable, Has[PushGateway]] =
     ZLayer
       .service[Option[PushGatewayConfig]]
       .flatMap { x =>
         x.get match {
           case Some(value) =>
-            (ZIO(value).toLayer ++ ZLayer.identity[Logging] >>> Impl.layer).tap(_ => log.info("Using PushGateway"))
+            (ZIO(value).toLayer ++ ZLayer.identity[Logging] >>> PushGatewayImpl.layer)
+              .tap(_ => log.info("Using PushGateway"))
           case None =>
-            (ZLayer.identity[Logging] >>> NoopImpl.layer).tap(_ => log.info("No PushGateway integration"))
+            (ZLayer.identity[Logging] >>> PushGatewayNoopImpl.layer).tap(_ => log.info("No PushGateway integration"))
         }
       }
 }
@@ -48,19 +49,24 @@ final case class PushError(jobName: JobName, underlying: Throwable)
 
 /** Noop is used when there is no PG configuration.
   */
-case object NoopImpl extends PushGateway {
-  override def push(registry: CollectorRegistry, jobName: JobName): ZIO[Any, PushError, Unit] = ZIO.unit
-
-  val layer: ZLayer[Any, Throwable, Has[PushGateway]] = ZIO(NoopImpl: PushGateway).toLayer
+case class PushGatewayNoopImpl(log: Logger[String]) extends PushGateway {
+  override def push(registry: CollectorRegistry, jobName: JobName): ZIO[Any, PushError, Unit] =
+    log.debug("no-op push").unit
 }
 
-final case class Impl(exporter: PPG) extends PushGateway {
-  def push(registry: CollectorRegistry, jobName: JobName): ZIO[Any, PushError, Unit] = Task {
-    exporter.push(registry, jobName)
-  }.mapError(PushError(jobName, _))
+object PushGatewayNoopImpl {
+  val layer = (PushGatewayNoopImpl.apply _).toLayer[PushGateway]
 }
 
-object Impl {
+final case class PushGatewayImpl(exporter: PPG, logger: Logger[String]) extends PushGateway {
+  def push(registry: CollectorRegistry, jobName: JobName): ZIO[Any, PushError, Unit] =
+    logger.debug(s"Pushing $jobName") *>
+      Task {
+        exporter.push(registry, jobName)
+      }.mapError(PushError(jobName, _))
+}
+
+object PushGatewayImpl {
   def makeHttpConnFactory(creds: Option[PushGatewayCreds]): Task[HttpConnectionFactory] = ZIO.effect {
     val basicAuth = creds.map(c => new BasicAuthHttpConnectionFactory(c.username, c.password))
     val default   = new DefaultHttpConnectionFactory()
@@ -73,11 +79,12 @@ object Impl {
     ppg
   }
 
-  val layer: ZLayer[Has[PushGatewayConfig], Throwable, Has[PushGateway]] = (for {
+  val layer = (for {
     config <- ZIO.service[PushGatewayConfig]
+    log    <- ZIO.service[Logger[String]]
     hcf    <- makeHttpConnFactory(config.creds)
     pg     <- makeUnsafePG(config.url, hcf)
-  } yield Impl(pg): PushGateway).toLayer
+  } yield PushGatewayImpl(pg, log): PushGateway).toLayer
 }
 
 final case class PushGatewayConfig(
