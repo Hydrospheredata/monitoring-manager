@@ -61,7 +61,7 @@ object Layers {
   val inferenceSub =
     ((logger >>> S3ObjectIndex.layer) ++ s3Client ++ db ++ logger) >>> InferenceSubscriptionService.layer
 
-  val pushGateway = Config.layer >>> PushGateway.layer
+  val pushGateway = Config.layer ++ logger >>> PushGateway.layer
 
   val all =
     Config.layer ++ logger ++ db ++ api ++ modelSub ++ inferenceSub ++ pushGateway

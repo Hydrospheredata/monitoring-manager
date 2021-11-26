@@ -1,20 +1,25 @@
 package io.hydrosphere.monitoring.manager.usecases
 
-import io.hydrosphere.monitoring.manager.domain.metrics.{Measurable, MetricsService}
+import io.hydrosphere.monitoring.manager.domain.metrics.{Measurable, MetricsService, PushGateway}
 import io.hydrosphere.monitoring.manager.domain.metrics.MeasurableInstances._
 import io.hydrosphere.monitoring.manager.domain.report.ReportErrors.InvalidAckReport
 import io.hydrosphere.monitoring.manager.domain.report.{Report, ReportRepository}
 import monitoring_manager.monitoring_manager.GetInferenceDataUpdatesRequest
-import zio.ZIO
-import zio.logging.log
+import zio.{Has, ZIO}
+import zio.logging.{log, Logging}
 
 object ProcessPluginAck {
-  def apply(req: GetInferenceDataUpdatesRequest) =
+  def apply(
+      req: GetInferenceDataUpdatesRequest
+  ): ZIO[Has[PushGateway] with Has[ReportRepository] with Logging, Throwable, Report] =
     (for {
       _      <- log.debug(s"Got request: ${req.pluginId} ack=${req.ack.isDefined}")
       report <- parseReport(req)
       _      <- ReportRepository.create(report)
-      _      <- MetricsService.sendMeasurable(s"${report.pluginId}: ${report.file} ${report.fileModifiedAt}", report)
+      _ <- MetricsService
+        .sendMeasurable(s"${report.pluginId}: ${report.file} ${report.fileModifiedAt}", report)
+        .tapError(x => log.throwable("Error while sending metrics", x))
+        .either
     } yield report)
       .tapError(err => log.throwable("Error while handling plugin request", err))
 

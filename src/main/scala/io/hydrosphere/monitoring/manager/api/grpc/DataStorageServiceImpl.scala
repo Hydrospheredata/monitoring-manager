@@ -19,23 +19,15 @@ final case class DataStorageServiceImpl()
       request: stream.Stream[Status, GetInferenceDataUpdatesRequest]
   ): ZStream[Logging with Has[InferenceSubscriptionService] with Has[PushGateway] with Has[
     ReportRepository
-  ], Status, GetInferenceDataUpdatesResponse] = {
-    //noinspection SimplifyTapInspection (bug in idea-zio)
-    val requestHandling = request
-      .mapError(_.asRuntimeException())
-      .tap(req => log.debug(s"Got request: ${req.pluginId} ack=${req.ack.isDefined}"))
-      .tap(ProcessPluginAck(_).either)
-      .tapError(err => log.throwable("Error while handling plugin request", err))
-
-    request
-      .tap(ProcessPluginAck(_).either)
-      .mapError(_.asRuntimeException())
-      .flatMap(r => requestHandling.mergeEither(DataService.subscibeToInferenceData(r.pluginId)))
-      .collect { case Right(v) => v }
-      .mapError(Status.fromThrowable)
-  }
+  ], Status, GetInferenceDataUpdatesResponse] =
+    for {
+      q    <- ZStream.fromEffect(Queue.bounded[GetInferenceDataUpdatesRequest](5))
+      _    <- ZStream.fromEffect(request.tap(q.offer).runDrain.fork)
+      req  <- ZStream.fromQueue(q).tap(r => log.warn(s"${r.pluginId} took 1 element for discovery"))
+      resp <- DataService.subscibeToInferenceData(req.pluginId)
+      _    <- ZStream.fromEffect(q.take.flatMap(ProcessPluginAck.apply).fork)
+    } yield resp
 }
-
 object DataStorageServiceImpl {
   val layer =
     (DataStorageServiceImpl.apply _).toLayer

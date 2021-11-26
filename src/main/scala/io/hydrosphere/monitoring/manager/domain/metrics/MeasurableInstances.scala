@@ -9,20 +9,20 @@ object MeasurableInstances {
   implicit val batchStats: Measurable[BatchStats] = new Measurable[BatchStats] {
     def measure(obj: BatchStats, parentLabels: MetricLabels): ZIO[Registry, Throwable, Unit] =
       for {
-        susGauge  <- Summary("suspicious-items-ratio", parentLabels.toArray, List.empty)
-        _         <- susGauge.observe(obj.susRatio)
-        failGauge <- Summary("failed-items-ratio", parentLabels.toArray, List.empty)
-        _         <- failGauge.observe(obj.failRatio)
+        susGauge  <- Summary("SuspiciousItemsRatio", parentLabels.keys, List.empty)
+        _         <- susGauge.observe(obj.susRatio, parentLabels.values)
+        failGauge <- Summary("failedItemsRatio", parentLabels.keys, List.empty)
+        _         <- failGauge.observe(obj.failRatio, parentLabels.values)
       } yield ()
   }
 
   implicit val feature: Measurable[FeatureReports] = new Measurable[FeatureReports] {
     override def measure(obj: FeatureReports, parentLabels: MetricLabels): ZIO[Registry, Throwable, Unit] =
       for {
-        gauge <- Counter("drift-check-fails", parentLabels.toArray)
+        gauge <- Counter("DriftCheckFails", parentLabels.keys)
         _ <- ZIO.foreach_(obj) { case (feature, reports) =>
           val num = reports.filterNot(_.isGood).size
-          gauge.inc(num, Array(s"feature=$feature"))
+          gauge.inc(num, parentLabels.values)
         }
       } yield ()
   }
@@ -33,12 +33,11 @@ object MeasurableInstances {
         "pluginId"     -> obj.pluginId,
         "modelName"    -> obj.modelName,
         "modelVersion" -> obj.modelVersion.toString,
-        "file"         -> obj.file.toString,
-        "timestamp"    -> obj.fileModifiedAt.toString
+        "file"         -> obj.file.toString
       )
       for {
-        counter <- Counter("reports", labels.toArray)
-        _       <- counter.inc()
+        counter <- Counter("reports", labels.keys)
+        _       <- counter.inc(labels.values)
         _ <- obj.batchStats match {
           case Some(value) => batchStats.measure(value, labels)
           case None        => ZIO.unit
@@ -48,7 +47,7 @@ object MeasurableInstances {
             feature.measure(value, labels)
           case _ => ZIO.unit
         }
-      } yield ???
+      } yield ()
     }
   }
 

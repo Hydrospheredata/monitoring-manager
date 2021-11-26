@@ -8,6 +8,7 @@ import io.prometheus.client.exporter.{
   HttpConnectionFactory,
   PushGateway => PPG
 }
+import zio.logging.{log, Logging}
 import zio.macros.accessible
 import zio.metrics.prometheus.Registry
 import zio.{Has, Task, ZIO, ZLayer}
@@ -30,13 +31,17 @@ object PushGateway {
   type Username = String
   type Password = String
 
-  val layer: ZLayer[Has[Option[PushGatewayConfig]], Throwable, Has[PushGateway]] =
-    ZLayer.service[Option[PushGatewayConfig]].flatMap { x =>
-      x.get match {
-        case Some(value) => ZIO(value).toLayer >>> Impl.layer
-        case None        => NoopImpl.layer
+  val layer: ZLayer[Has[Option[PushGatewayConfig]] with Logging, Throwable, Has[PushGateway]] =
+    ZLayer
+      .service[Option[PushGatewayConfig]]
+      .flatMap { x =>
+        x.get match {
+          case Some(value) =>
+            (ZIO(value).toLayer ++ ZLayer.identity[Logging] >>> Impl.layer).tap(_ => log.info("Using PushGateway"))
+          case None =>
+            (ZLayer.identity[Logging] >>> NoopImpl.layer).tap(_ => log.info("No PushGateway integration"))
+        }
       }
-    }
 }
 final case class PushError(jobName: JobName, underlying: Throwable)
     extends Error(s"Can't push $jobName job to the PushGateway", underlying)
