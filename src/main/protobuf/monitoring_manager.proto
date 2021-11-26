@@ -2,6 +2,8 @@ syntax = "proto3";
 
 package monitoring_manager;
 
+import "google/protobuf/timestamp.proto";
+
 message ModelSignature {
   repeated ModelField inputs = 2;
   repeated ModelField outputs = 3;
@@ -96,7 +98,7 @@ message GetModelUpdatesRequest {
 message GetModelUpdatesResponse {
   ModelId model = 1;
   ModelSignature signature = 2;
-  repeated string training_data_objs = 3;
+  repeated DataObject training_data_objs = 3;
 }
 
 service DataStorageService {
@@ -104,27 +106,45 @@ service DataStorageService {
 }
 
 message GetInferenceDataUpdatesRequest {
-  message InitialRequest {
-    string plugin_id = 1;
-  }
-
-  message Ack {
-    string plugin_id = 1;
-    repeated string inference_data_objs = 2;
-  }
-  oneof data {
-    InitialRequest init = 1;
-    Ack ack = 2;
-  }
+  string plugin_id = 1;
+  AnalyzedAck ack = 2;
 }
 
 message GetInferenceDataUpdatesResponse {
   ModelId model = 1;
   ModelSignature signature = 2;
-  repeated string inference_data_objs = 3;
+  repeated DataObject inference_data_objs = 3;
 }
 
-message ModelId{
+message ModelId {
   string model_name = 1;
   uint64 model_version = 2;
+}
+
+message AnalyzedAck {
+  string model_name = 1;
+  uint64 model_version = 2;
+  DataObject inference_data_obj = 3;
+  map<string, FeatureReport> feature_reports = 4;
+  BatchStatistics batch_stats = 5;
+}
+
+message BatchStatistics {
+  double sus_ratio = 1; // [0, +inf]
+  string sus_verdict = 2;
+  double fail_ratio = 3; // [0, 1]
+}
+
+message FeatureReport {
+  repeated FRRow rows = 1;
+}
+
+message FRRow {
+  string description = 1;
+  bool is_good = 2;
+}
+
+message DataObject {
+  string key = 1;
+  google.protobuf.Timestamp lastModifiedAt = 2;
 }

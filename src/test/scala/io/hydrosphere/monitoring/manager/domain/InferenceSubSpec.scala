@@ -1,24 +1,24 @@
-package io.hydrosphere.monitoring.manager.domain
-
-import io.github.vigoo.zioaws.s3.model.S3Object
-import io.hydrosphere.monitoring.manager.{GenericUnitTest, Layers}
-import io.hydrosphere.monitoring.manager.domain.data.{
-  InferenceSubscriptionService,
-  S3Client,
-  S3ObjectIndex
-}
-import sttp.model.Uri
-import zio.stream.ZStream
-import sttp.client3._
-import zio.logging.log
-import zio.test.assertM
-import zio.test.Assertion.equalTo
-import zio.test.environment.TestClock
-import zio.{Chunk, Schedule, ZIO, ZQueue}
-import zio.clock.Clock
-
-import java.time.Duration
-
+//package io.hydrosphere.monitoring.manager.domain
+//
+//import io.github.vigoo.zioaws.s3.model.S3Object
+//import io.hydrosphere.monitoring.manager.{GenericUnitTest, Layers}
+//import io.hydrosphere.monitoring.manager.domain.data.{
+//  InferenceSubscriptionService,
+//  S3Client,
+//  S3ObjectIndex
+//}
+//import sttp.model.Uri
+//import zio.stream.ZStream
+//import sttp.client3._
+//import zio.logging.log
+//import zio.test.assertM
+//import zio.test.Assertion.equalTo
+//import zio.test.environment.TestClock
+//import zio.{Chunk, Schedule, ZIO, ZQueue}
+//import zio.clock.Clock
+//
+//import java.time.Duration
+//
 //object InferenceSubSpec extends GenericUnitTest {
 //  override def spec = suite("Inference data subs")(
 //    testM("1 Plugin <- 1 Prefix") {

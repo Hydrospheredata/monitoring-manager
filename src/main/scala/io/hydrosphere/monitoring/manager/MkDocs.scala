@@ -1,10 +1,6 @@
 package io.hydrosphere.monitoring.manager
 
-import io.hydrosphere.monitoring.manager.api.http.{
-  ModelEndpoint,
-  PluginEndpoint,
-  PluginProxyEndpoint
-}
+import io.hydrosphere.monitoring.manager.api.http.{ModelEndpoint, PluginEndpoint, PluginProxyEndpoint, ReportEndpoint}
 import sttp.tapir.docs.openapi._
 import sttp.tapir.openapi.circe.yaml._
 import zio.ZIO
@@ -15,7 +11,7 @@ import zio.console._
 object MkDocs extends zio.App {
   def generateOpenApi() = ZIO.effect {
     val routes =
-      PluginEndpoint.endpoints ++ ModelEndpoint.endpoints ++ PluginProxyEndpoint.endpoints
+      PluginEndpoint.endpoints ++ ModelEndpoint.endpoints ++ PluginProxyEndpoint.endpoints ++ ReportEndpoint.endpoints
     val interpreter = OpenAPIDocsInterpreter()
     interpreter.toOpenAPI(routes, "Monitoring manager", "v1")
   }

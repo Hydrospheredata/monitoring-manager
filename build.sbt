@@ -13,6 +13,8 @@ Compile / PB.targets := Seq(
   scalapb.zio_grpc.ZioCodeGenerator -> (Compile / sourceManaged).value / "scalapb"
 )
 
+IntegrationTest / fork := true
+
 enablePlugins(JavaAppPackaging)
 enablePlugins(DockerPlugin)
 
@@ -22,3 +24,9 @@ openapi := (Compile / runMain).toTask(" io.hydrosphere.monitoring.manager.MkDocs
 Compile / mainClass := Some("io.hydrosphere.monitoring.manager.Main")
 
 addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
+
+dockerBaseImage := "openjdk:11"
+
+addCommandAlias("testAll", ";test;it:test")
+
+addCommandAlias("build", ";openapi;docker:publishLocal")

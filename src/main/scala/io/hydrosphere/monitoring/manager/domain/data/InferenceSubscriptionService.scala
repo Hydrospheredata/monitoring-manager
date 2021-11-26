@@ -1,12 +1,13 @@
 package io.hydrosphere.monitoring.manager.domain.data
 
-import io.github.vigoo.zioaws.s3.model.S3Object
 import io.hydrosphere.monitoring.manager.domain.data.InferenceSubscriptionService.S3Data
 import io.hydrosphere.monitoring.manager.domain.model.{Model, ModelRepository}
 import io.hydrosphere.monitoring.manager.domain.plugin.Plugin.PluginId
-import zio.{Has, Ref, Schedule, ZHub, ZIO, ZRef}
+import io.hydrosphere.monitoring.manager.domain.report.ReportRepository
+import zio.clock.Clock
 import zio.logging.Logger
 import zio.stream.ZStream
+import zio.{Has, Ref, Schedule, ZHub, ZIO, ZRef}
 
 import java.time.Duration
 
@@ -15,34 +16,34 @@ case class InferenceSubscriptionService(
     modelRepository: ModelRepository,
     s3Client: S3Client,
     objIndex: S3ObjectIndex,
-    state: Ref[Map[PluginId, zio.Hub[S3Data]]],
+    hubsState: Ref[Map[PluginId, zio.Hub[S3Data]]],
     cap: Int
 ) {
-  def subscribe(pluginId: PluginId) = {
-    val get = state.get
+
+  def hubGetOrSet(pluginId: PluginId) = {
+    val getHub = hubsState.get
       .flatMap(m => ZIO.fromOption(m.get(pluginId))) <* log.debug(s"Got $pluginId hub from cache")
-    val create = for {
+    val createHub = for {
       hub <- ZHub.bounded[S3Data](cap)
-      _   <- state.update(m => m + (pluginId -> hub))
+      _   <- hubsState.update(m => m + (pluginId -> hub))
       _   <- log.debug(s"Created $pluginId hub")
     } yield hub
-    get.orElse(create)
+    getHub.orElse(createHub)
   }
 
-  def unsubscribe(pluginId: PluginId) =
-    state.update(stateMap => stateMap - pluginId)
+  def subscribe(pluginId: PluginId) =
+    ZStream.fromEffect(hubGetOrSet(pluginId)).flatMap(x => ZStream.fromHub(x))
 
   def startMonitoring =
     monitoringStep
       .tap { case (model, obj) =>
-        state.get.flatMap { stateMap =>
-          log.info(s"Sending ${obj.fullPath} to ${stateMap.keys.toList}") *>
-            ZIO
-              .foreach(stateMap.toSeq) { case (pluginId, hub) =>
-                log.info(s"Got object $obj") *>
-                  (hub.publish(model -> obj).whenM(objIndex.isNew(pluginId, obj)))
-              }
-              .unit
+        hubsState.get.flatMap { stateMap =>
+          ZIO
+            .foreach(stateMap.toSeq) { case (pluginId, hub) =>
+              ((hub.publish(model -> obj) *> log.info(s"Sending ${obj.fullPath} to $pluginId"))
+                .whenM(shouldSend(pluginId, obj)))
+            }
+            .unit
         }
       }
       .forever
@@ -50,17 +51,28 @@ case class InferenceSubscriptionService(
       .tapError(err => log.throwable("S3 Monitoring loop failed", err))
       .ensuring(log.warn("S3 Monitoring loop finished"))
 
+  def shouldSend(
+      pluginId: PluginId,
+      obj: S3Ref
+  ): ZIO[Clock with Has[ReportRepository], Throwable, Boolean] =
+    ReportRepository.exists(pluginId, obj).flatMap {
+      case true =>
+        log.debug(s"$pluginId already created a report for $obj. Won't send it again.") *>
+          ZIO(false)
+      case false =>
+        objIndex.isNew(pluginId, obj).tap(isNew => log.debug(s"Should I send $obj to $pluginId? $isNew"))
+    }
+
   def monitoringStep: ZStream[Has[ModelRepository], Throwable, S3Data] =
     ModelRepository
       .all()
       .map(x => x -> x.inferenceDataPrefix)
       .collect { case (m, Some(prefix)) => m -> prefix }
-      .flatMap { case (m, prefix) => s3Client.getPrefixData(prefix.u).map(o => m -> o) }
-      .tap(d => log.info(s"Got from S3 $d"))
+      .flatMap { case (m, prefix) => s3Client.getPrefixData(prefix.u).map(o => m -> o.toRef) }
 }
 
 object InferenceSubscriptionService {
-  type S3Data = (Model, S3Obj)
+  type S3Data = (Model, S3Ref)
 
   def make(
       s3Client: S3Client,
