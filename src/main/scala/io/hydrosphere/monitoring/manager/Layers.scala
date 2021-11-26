@@ -6,6 +6,7 @@ import io.github.vigoo.zioaws.core.config
 import io.hydrosphere.monitoring.manager.api.http._
 import io.hydrosphere.monitoring.manager.db.{CloseableDataSource, DatabaseContext, FlywayClient}
 import io.hydrosphere.monitoring.manager.domain.data._
+import io.hydrosphere.monitoring.manager.domain.metrics.PushGateway
 import io.hydrosphere.monitoring.manager.domain.model._
 import io.hydrosphere.monitoring.manager.domain.plugin.{PluginRepository, PluginRepositoryImpl}
 import io.hydrosphere.monitoring.manager.domain.report.{ReportRepository, ReportRepositoryImpl}
@@ -60,6 +61,8 @@ object Layers {
   val inferenceSub =
     ((logger >>> S3ObjectIndex.layer) ++ s3Client ++ db ++ logger) >>> InferenceSubscriptionService.layer
 
+  val pushGateway = Config.layer >>> PushGateway.layer
+
   val all =
-    Config.layer ++ logger ++ db ++ api ++ modelSub ++ inferenceSub
+    Config.layer ++ logger ++ db ++ api ++ modelSub ++ inferenceSub ++ pushGateway
 }
