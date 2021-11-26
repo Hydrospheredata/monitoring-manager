@@ -29,7 +29,7 @@ object Layers {
   }
 
   val s3Client =
-    (netty.default ++ Config.layer) >>> core.config.configured() >>> s3.live >>> S3Client.layer
+    (netty.default ++ Config.layer) >>> core.config.configured() >>> (s3.live ++ logger) >>> S3Client.layer
 
   val modelHub = ZHub.unbounded[Model].toLayer
 
@@ -50,7 +50,7 @@ object Layers {
 
   val pluginEndpoint =
     (ZLayer.requires[ZEnv] ++ db ++ sttp ++ Config.layer) >>> PluginEndpoint.layer
-  val modelEndpoint  = db >>> ModelEndpoint.layer
+  val modelEndpoint  = db ++ s3Client >>> ModelEndpoint.layer
   val proxyEndpoint  = (sttp ++ db) >>> PluginProxyEndpoint.layer
   val reportEndpoint = db >>> ReportEndpoint.layer
   val api            = pluginEndpoint ++ modelEndpoint ++ proxyEndpoint ++ reportEndpoint

@@ -2,6 +2,7 @@ package io.hydrosphere.monitoring.manager.api.http
 
 import io.hydrosphere.monitoring.manager.api.http.ModelEndpoint.listAssociatedReportsDesc
 import io.hydrosphere.monitoring.manager.api.http.ReportEndpoint.{jsonBody, path, reportEndpoint, throwableBody}
+import io.hydrosphere.monitoring.manager.domain.data.S3Client
 import io.hydrosphere.monitoring.manager.domain.model.Model.{ModelName, ModelVersion}
 import io.hydrosphere.monitoring.manager.domain.model._
 import io.hydrosphere.monitoring.manager.domain.report.ReportRepository
@@ -10,7 +11,8 @@ import zio._
 
 case class ModelEndpoint(
     modelRepo: ModelRepository,
-    reportRepository: ReportRepository
+    reportRepository: ReportRepository,
+    s3Client: S3Client
 ) extends GenericEndpoint {
 
   val modelList = ModelEndpoint.modelListDesc
@@ -26,7 +28,7 @@ case class ModelEndpoint(
       .serverLogic[Task](model =>
         ModelService
           .registerModel(model)
-          .provide(Has(modelRepo))
+          .provide(Has(modelRepo) ++ Has(s3Client))
           .either
       )
 
