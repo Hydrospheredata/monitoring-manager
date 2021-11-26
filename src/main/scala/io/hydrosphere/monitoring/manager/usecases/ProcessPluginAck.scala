@@ -19,13 +19,12 @@ object ProcessPluginAck {
       _ <- MetricsService
         .sendMeasurable(s"${report.pluginId}: ${report.file} ${report.fileModifiedAt}", report)
         .tapError(x => log.throwable("Error while sending metrics", x))
-        .either
+        .forkDaemon
     } yield report)
       .tapError(err => log.throwable("Error while handling plugin request", err))
 
   def parseReport(req: GetInferenceDataUpdatesRequest) =
     for {
-      _         <- log.info(s"${req.pluginId} sent data update. isAck=${req.ack.isDefined}")
       rawReport <- ZIO.fromOption(req.ack).orElseFail(InvalidAckReport(req.pluginId, s"${req.pluginId} sent empty ack"))
       report <- ZIO
         .fromEither(Report.fromPluginAck(req.pluginId, rawReport))

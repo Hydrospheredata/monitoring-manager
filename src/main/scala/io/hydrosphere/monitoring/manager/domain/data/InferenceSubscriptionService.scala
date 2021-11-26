@@ -36,18 +36,19 @@ case class InferenceSubscriptionService(
 
   def startMonitoring =
     monitoringStep
-      .tap { case (model, obj) =>
-        hubsState.get.flatMap { stateMap =>
-          ZIO
-            .foreach(stateMap.toSeq) { case (pluginId, hub) =>
-              ((hub.publish(model -> obj) *> log.info(s"Sending ${obj.fullPath} to $pluginId"))
-                .whenM(shouldSend(pluginId, obj)))
-            }
-            .unit
-        }
-      }
-      .forever
       .schedule(Schedule.spaced(Duration.ofSeconds(10)))
+      .forever
+      .tap { case (model, obj) =>
+        log.debug("Got the subscription state") *>
+          hubsState.get.flatMap { stateMap =>
+            ZIO
+              .foreachPar_(stateMap.toSeq) { case (pluginId, hub) =>
+                ((hub.publish(model -> obj) *> log.info(s"Discovered ${obj.fullPath} for $pluginId"))
+                  .whenM(shouldSend(pluginId, obj)))
+              }
+              .unit
+          }
+      }
       .tapError(err => log.throwable("S3 Monitoring loop failed", err))
       .ensuring(log.warn("S3 Monitoring loop finished"))
 
@@ -57,15 +58,16 @@ case class InferenceSubscriptionService(
   ): ZIO[Clock with Has[ReportRepository], Throwable, Boolean] =
     ReportRepository.exists(pluginId, obj).flatMap {
       case true =>
-        log.debug(s"$pluginId already created a report for $obj. Won't send it again.") *>
+        log.debug(s"$pluginId has a report for $obj. Won't send.") *>
           ZIO(false)
       case false =>
-        objIndex.isNew(pluginId, obj).tap(isNew => log.debug(s"Should I send $obj to $pluginId? $isNew"))
+        objIndex.isNew(pluginId, obj).tap(isNew => log.debug(s"Index: $obj -> $pluginId? $isNew"))
     }
 
   def monitoringStep: ZStream[Has[ModelRepository], Throwable, S3Data] =
     ModelRepository
       .all()
+      .tap(m => log.debug(s"Discovering ${m.name}:${m.version} model"))
       .map(x => x -> x.inferenceDataPrefix)
       .collect { case (m, Some(prefix)) => m -> prefix }
       .flatMap { case (m, prefix) => s3Client.getPrefixData(prefix).map(o => m -> o.toRef) }

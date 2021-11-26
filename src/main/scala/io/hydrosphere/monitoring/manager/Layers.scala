@@ -24,7 +24,7 @@ object Layers {
     val logFormat = "[corr-id=%s] %s"
     Slf4jLogger.make { (context, message) =>
       val correlationId =
-        context.get(LogAnnotation.CorrelationId).map(_.toString).getOrElse("undefined")
+        context.get(LogAnnotation.CorrelationId).map(_.toString).getOrElse("N/A")
       logFormat.format(correlationId, message)
     }
   }
@@ -61,7 +61,7 @@ object Layers {
   val inferenceSub =
     ((logger >>> S3ObjectIndex.layer) ++ s3Client ++ db ++ logger) >>> InferenceSubscriptionService.layer
 
-  val pushGateway = Config.layer ++ logger >>> PushGateway.layer
+  val pushGateway = Config.layer ++ logger ++ ZLayer.requires[Blocking] >>> PushGateway.layer
 
   val all =
     Config.layer ++ logger ++ db ++ api ++ modelSub ++ inferenceSub ++ pushGateway

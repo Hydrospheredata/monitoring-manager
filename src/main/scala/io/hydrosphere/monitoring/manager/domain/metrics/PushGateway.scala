@@ -12,6 +12,7 @@ import zio.logging.{log, Logger, Logging}
 import zio.macros.accessible
 import zio.metrics.prometheus.Registry
 import zio._
+import zio.blocking.Blocking
 
 import java.net.URL
 
@@ -31,13 +32,13 @@ object PushGateway {
   type Username = String
   type Password = String
 
-  val layer: ZLayer[Logging with Has[Option[PushGatewayConfig]], Throwable, Has[PushGateway]] =
+  val layer =
     ZLayer
       .service[Option[PushGatewayConfig]]
       .flatMap { x =>
         x.get match {
           case Some(value) =>
-            (ZIO(value).toLayer ++ ZLayer.identity[Logging] >>> PushGatewayImpl.layer)
+            (ZIO(value).toLayer ++ ZLayer.identity[Logging] ++ ZLayer.identity[Blocking] >>> PushGatewayImpl.layer)
               .tap(_ => log.info("Using PushGateway"))
           case None =>
             (ZLayer.identity[Logging] >>> PushGatewayNoopImpl.layer).tap(_ => log.info("No PushGateway integration"))
@@ -58,12 +59,15 @@ object PushGatewayNoopImpl {
   val layer = (PushGatewayNoopImpl.apply _).toLayer[PushGateway]
 }
 
-final case class PushGatewayImpl(exporter: PPG, logger: Logger[String]) extends PushGateway {
+final case class PushGatewayImpl(exporter: PPG, logger: Logger[String], blocking: Blocking.Service)
+    extends PushGateway {
   def push(registry: CollectorRegistry, jobName: JobName): ZIO[Any, PushError, Unit] =
     logger.debug(s"Pushing $jobName") *>
-      Task {
-        exporter.push(registry, jobName)
-      }.mapError(PushError(jobName, _))
+      blocking.blocking {
+        Task {
+          exporter.push(registry, jobName)
+        }.mapError(PushError(jobName, _))
+      }
 }
 
 object PushGatewayImpl {
@@ -82,9 +86,10 @@ object PushGatewayImpl {
   val layer = (for {
     config <- ZIO.service[PushGatewayConfig]
     log    <- ZIO.service[Logger[String]]
+    block  <- ZIO.service[Blocking.Service]
     hcf    <- makeHttpConnFactory(config.creds)
     pg     <- makeUnsafePG(config.url, hcf)
-  } yield PushGatewayImpl(pg, log): PushGateway).toLayer
+  } yield PushGatewayImpl(pg, log, block): PushGateway).toLayer
 }
 
 final case class PushGatewayConfig(

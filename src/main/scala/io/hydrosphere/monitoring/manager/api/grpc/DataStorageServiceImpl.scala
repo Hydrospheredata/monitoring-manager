@@ -21,9 +21,9 @@ final case class DataStorageServiceImpl()
     ReportRepository
   ], Status, GetInferenceDataUpdatesResponse] =
     for {
-      q    <- ZStream.fromEffect(Queue.bounded[GetInferenceDataUpdatesRequest](5))
-      _    <- ZStream.fromEffect(request.tap(q.offer).runDrain.fork)
-      req  <- ZStream.fromQueue(q).tap(r => log.warn(s"${r.pluginId} took 1 element for discovery"))
+      q <- ZStream.fromEffect(Queue.bounded[GetInferenceDataUpdatesRequest](32))
+      _ <- ZStream.fromEffect(request.tap(q.offer).tap(_ => log.debug("Got incoming discovery request")).runDrain.fork)
+      req  <- ZStream.fromQueue(q).tap(r => log.debug(s"${r.pluginId} took 1 element for discovery"))
       resp <- DataService.subscibeToInferenceData(req.pluginId)
       _    <- ZStream.fromEffect(q.take.flatMap(ProcessPluginAck.apply).fork)
     } yield resp
