@@ -4,12 +4,20 @@ import io.circe._
 import io.getquill.MappedEncoding
 import sttp.model.{Uri, UriInterpolator}
 import sttp.tapir.{Codec, Schema}
+import zio.ZIO
 
 case class URI(u: Uri) extends AnyVal {
   override def toString = u.toString()
 
   def ==(str: String): Boolean =
     this.toString == str
+
+  def maybeBucketName: Option[String] = u.host
+  def bucketName: ZIO[Any, IllegalArgumentException, String] = ZIO
+    .fromOption(maybeBucketName)
+    .orElseFail(new IllegalArgumentException(s"Can't extract bucket name from $u"))
+
+  def objectPath: String = u.pathSegments.toString
 }
 
 object URI {

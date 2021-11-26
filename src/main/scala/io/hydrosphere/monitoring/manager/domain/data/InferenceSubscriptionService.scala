@@ -68,7 +68,7 @@ case class InferenceSubscriptionService(
       .all()
       .map(x => x -> x.inferenceDataPrefix)
       .collect { case (m, Some(prefix)) => m -> prefix }
-      .flatMap { case (m, prefix) => s3Client.getPrefixData(prefix.u).map(o => m -> o.toRef) }
+      .flatMap { case (m, prefix) => s3Client.getPrefixData(prefix).map(o => m -> o.toRef) }
 }
 
 object InferenceSubscriptionService {
