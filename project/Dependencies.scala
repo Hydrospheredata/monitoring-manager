@@ -46,23 +46,24 @@ object Dependencies {
   )
 
   final val utils = Seq(
-    "dev.zio"                 %% "zio-nio"             % "1.0.0-RC11",
-    "eu.timepit"              %% "refined"             % "0.9.27",
-    "dev.zio"                 %% "zio-config"          % zioConfigVersion,
-    "dev.zio"                 %% "zio-config-magnolia" % zioConfigVersion,
-    "dev.zio"                 %% "zio-config-refined"  % zioConfigVersion,
-    "dev.zio"                 %% "zio-config-typesafe" % zioConfigVersion,
-    "org.apache.logging.log4j" % "log4j-api"           % log4jVersion,
-    "org.apache.logging.log4j" % "log4j-core"          % log4jVersion,
-    "org.apache.logging.log4j" % "log4j-slf4j-impl"    % log4jVersion,
-    "dev.zio"                 %% "zio-logging"         % zioLogVersion,
-    "dev.zio"                 %% "zio-logging-slf4j"   % zioLogVersion,
-    "com.spotify"              % "docker-client"       % "8.16.0" exclude ("ch.qos.logback", "logback-classic"),
-    "com.beachape"            %% "enumeratum"          % enumeratumVersion,
-    "com.beachape"            %% "enumeratum-circe"    % enumeratumVersion,
-    "com.beachape"            %% "enumeratum-quill"    % enumeratumVersion,
-    "dev.optics"              %% "monocle-core"        % monocleVersion,
-    "dev.optics"              %% "monocle-macro"       % monocleVersion
+    "dev.zio"                 %% "zio-nio"                % "1.0.0-RC11",
+    "eu.timepit"              %% "refined"                % "0.9.27",
+    "dev.zio"                 %% "zio-config"             % zioConfigVersion,
+    "dev.zio"                 %% "zio-config-magnolia"    % zioConfigVersion,
+    "dev.zio"                 %% "zio-config-refined"     % zioConfigVersion,
+    "dev.zio"                 %% "zio-config-typesafe"    % zioConfigVersion,
+    "org.apache.logging.log4j" % "log4j-api"              % log4jVersion,
+    "org.apache.logging.log4j" % "log4j-core"             % log4jVersion,
+    "org.apache.logging.log4j" % "log4j-slf4j-impl"       % log4jVersion,
+    "dev.zio"                 %% "zio-logging"            % zioLogVersion,
+    "dev.zio"                 %% "zio-logging-slf4j"      % zioLogVersion,
+    "com.spotify"              % "docker-client"          % "8.16.0" exclude ("ch.qos.logback", "logback-classic"),
+    "com.beachape"            %% "enumeratum"             % enumeratumVersion,
+    "com.beachape"            %% "enumeratum-circe"       % enumeratumVersion,
+    "com.beachape"            %% "enumeratum-quill"       % enumeratumVersion,
+    "dev.optics"              %% "monocle-core"           % monocleVersion,
+    "dev.optics"              %% "monocle-macro"          % monocleVersion,
+    "dev.zio"                 %% "zio-metrics-prometheus" % "1.0.13"
   )
 
   final val test = Seq(
