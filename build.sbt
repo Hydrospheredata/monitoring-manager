@@ -1,3 +1,5 @@
+import com.typesafe.sbt.packager.docker.Cmd
+
 name         := "monitoring-manager"
 version      := "dev"
 scalaVersion := "2.13.6"
@@ -26,6 +28,15 @@ Compile / mainClass := Some("io.hydrosphere.monitoring.manager.Main")
 addCompilerPlugin("com.olegpy" %% "better-monadic-for" % "0.3.1")
 
 dockerBaseImage := "openjdk:11"
+dockerCommands ++= Seq(
+  Cmd("USER", "root"),
+  Cmd("""RUN GRPC_HEALTH_PROBE_VERSION=v0.4.6 && \
+    mkdir /opt/grpc/ && \
+    wget -qO/opt/grpc/grpc_health_probe https://github.com/grpc-ecosystem/grpc-health-probe/releases/download/${GRPC_HEALTH_PROBE_VERSION}/grpc_health_probe-linux-amd64 && \
+    ln -s /opt/grpc/grpc_health_probe /usr/local/bin/grpc_health_probe && \
+    chmod +x /usr/local/bin/grpc_health_probe"""
+  ),
+  Cmd("USER", (Docker / daemonUser).value))
 
 addCommandAlias("testAll", ";test;it:test")
 

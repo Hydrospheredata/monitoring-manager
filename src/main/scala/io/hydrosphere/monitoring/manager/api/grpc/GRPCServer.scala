@@ -12,7 +12,9 @@ object GRPCServer {
     grpcPortHas <- ZLayer
       .service[EndpointConfig]
     grpcPort = grpcPortHas.get.grpcPort
-    builder  = NettyServerBuilder.forPort(grpcPort).addService(ProtoReflectionService.newInstance())
+    builder  = NettyServerBuilder.forPort(grpcPort)
+      .addService(ProtoReflectionService.newInstance())
+      .addService(HealthCheckServiceImpl())
     dataStorage   <- DataStorageServiceImpl.layer
     modelCatalog  <- ModelCatalogServiceImpl.layer
     pluginManager <- PluginManagementServiceImpl.layer
