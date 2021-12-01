@@ -25,13 +25,7 @@ object Config {
 
   /** Defines where to read configs. Reads from application.conf file and falls back into env variables
     */
-  val sources: ZIO[system.System, ReadError[String], ConfigSource] = for {
-    config <- TypesafeConfigSource.fromDefaultLoader
-    envs <- ConfigSource.fromSystemEnv(
-      keyDelimiter = Some('_'),
-      valueDelimiter = Some(',')
-    )
-  } yield config.orElse(envs)
+  val sources: ZIO[system.System, ReadError[String], ConfigSource] = TypesafeConfigSource.fromDefaultLoader
 
   val endpointDesc: ConfigDescriptor[EndpointConfig] =
     nested("endpoint")(descriptor[EndpointConfig])
