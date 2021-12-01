@@ -2,9 +2,8 @@ package io.hydrosphere.monitoring.manager
 
 import io.getquill.context.ZioJdbc.DataSourceLayer
 import io.github.vigoo.zioaws._
-import io.github.vigoo.zioaws.core.config
 import io.hydrosphere.monitoring.manager.api.http._
-import io.hydrosphere.monitoring.manager.db.{CloseableDataSource, DatabaseContext, FlywayClient}
+import io.hydrosphere.monitoring.manager.db.{DatabaseContext, FlywayClient}
 import io.hydrosphere.monitoring.manager.domain.data._
 import io.hydrosphere.monitoring.manager.domain.metrics.PushGateway
 import io.hydrosphere.monitoring.manager.domain.model._
@@ -12,9 +11,10 @@ import io.hydrosphere.monitoring.manager.domain.plugin.{PluginRepository, Plugin
 import io.hydrosphere.monitoring.manager.domain.report.{ReportRepository, ReportRepositoryImpl}
 import sttp.client3.asynchttpclient.zio.{AsyncHttpClientZioBackend, SttpClient}
 import zio.blocking.Blocking
-import zio.{system, Has, Layer, ULayer, ZEnv, ZHub, ZLayer}
-import zio.logging.{LogAnnotation, Logger}
 import zio.logging.slf4j.Slf4jLogger
+import zio.logging.{LogAnnotation, Logger}
+import zio.random.Random
+import zio.{Has, Layer, ULayer, ZEnv, ZHub, ZLayer}
 
 /** Define all dependencies here. Construct services using ZLayers. Merge contructed ZLayers with API layer. API Layer
   * is to be initialized and executed by zio.App
@@ -28,6 +28,8 @@ object Layers {
       logFormat.format(correlationId, message)
     }
   }
+
+  val basicEnv = ZLayer.requires[ZEnv] ++ logger
 
   val s3Client =
     (netty.default ++ Config.layer) >>> core.config.configured() >>> (s3.live ++ logger) >>> S3Client.layer
@@ -59,7 +61,8 @@ object Layers {
   val modelSub = (db ++ modelHub) >>> ModelSubscriptionManager.layer
 
   val inferenceSub =
-    ((logger >>> S3ObjectIndex.layer) ++ s3Client ++ db ++ logger) >>> InferenceSubscriptionService.layer
+    ((logger >>> S3ObjectIndex.layer) ++ s3Client ++ db ++ logger ++ ZLayer
+      .requires[Random]) >>> InferenceSubscriptionService.layer
 
   val pushGateway = Config.layer ++ logger ++ ZLayer.requires[Blocking] >>> PushGateway.layer
 
