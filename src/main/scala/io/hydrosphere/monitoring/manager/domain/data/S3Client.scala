@@ -42,6 +42,7 @@ object S3Client {
         .map(_.isRight)
 
     def getPrefixData(prefix: URI): ZStream[Any, Throwable, S3Obj] = for {
+      _      <- ZStream.fromEffect(log.debug(s"Getting objects for $prefix"))
       bucket <- ZStream.fromEffect(prefix.bucketName)
       request = s3.model.ListObjectsV2Request(
         bucket = bucket,
