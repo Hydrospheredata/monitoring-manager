@@ -26,18 +26,6 @@ object HTTPServer {
     routes   = CORS(compiled, corsConfig)
   } yield routes
 
-  def start[R <: Has[_]](port: Int, http: RHttpApp[R]): ZIO[R, Throwable, Nothing] =
-    (Server.port(port) ++ Server.app(http)).make.useForever
-      .provideSomeLayer[R](EventLoopGroup.auto(0) ++ ServerChannelFactory.auto)
-
-  val make = for {
-    config <- ZIO.service[EndpointConfig].toManaged_
-    routes <- routes.toManaged_
-    server <- (Server.port(config.httpPort) ++ Server.app(routes) ++ Server.maxRequestSize(
-      config.httpMaxRequestSize
-    )).make
-  } yield server
-
   def start =
     for {
       config <- ZIO.service[EndpointConfig]
