@@ -3,8 +3,9 @@ package io.hydrosphere.monitoring.manager.api.http
 import io.hydrosphere.monitoring.manager.EndpointConfig
 import sttp.tapir.server.ziohttp.ZioHttpInterpreter
 import zhttp.http.{CORS, CORSConfig}
-import zhttp.service.Server
-import zio.{Has, ZIO}
+import zhttp.service.{EventLoopGroup, Server}
+import zhttp.service.server.ServerChannelFactory
+import zio.ZIO
 import zio.logging.log
 
 object HTTPServer {
@@ -26,9 +27,13 @@ object HTTPServer {
 
   def start =
     for {
-      routes   <- routes
-      httpPort <- ZIO.access[Has[EndpointConfig]](_.get.httpPort)
-      _        <- log.info(s"Starting HTTP server at $httpPort port")
-      _        <- Server.start(httpPort, routes)
+      config <- ZIO.service[EndpointConfig]
+      routes <- routes
+      _      <- log.info(s"Starting HTTP server at ${config.httpPort} port")
+      _ <- (Server.simpleLeakDetection ++
+        Server.port(config.httpPort) ++
+        Server.app(routes) ++
+        Server.maxRequestSize(config.httpMaxRequestSize)).make.useForever
+        .provideSomeLayer(EventLoopGroup.auto(0) ++ ServerChannelFactory.auto)
     } yield ()
 }
