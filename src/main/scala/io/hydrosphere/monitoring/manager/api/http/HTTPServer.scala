@@ -1,12 +1,11 @@
 package io.hydrosphere.monitoring.manager.api.http
 
 import io.hydrosphere.monitoring.manager.EndpointConfig
-import io.hydrosphere.monitoring.manager.api.http.HTTPServer.routes
 import sttp.tapir.server.ziohttp.ZioHttpInterpreter
-import zhttp.http.{CORS, CORSConfig, RHttpApp}
+import zhttp.http.{CORS, CORSConfig}
 import zhttp.service.{EventLoopGroup, Server}
 import zhttp.service.server.ServerChannelFactory
-import zio.{Has, ZIO}
+import zio.ZIO
 import zio.logging.log
 
 object HTTPServer {
