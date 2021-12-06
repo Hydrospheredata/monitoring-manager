@@ -1,9 +1,11 @@
 package io.hydrosphere.monitoring.manager.api.http
 
 import io.hydrosphere.monitoring.manager.EndpointConfig
+import io.hydrosphere.monitoring.manager.api.http.HTTPServer.routes
 import sttp.tapir.server.ziohttp.ZioHttpInterpreter
-import zhttp.http.{CORS, CORSConfig}
-import zhttp.service.Server
+import zhttp.http.{CORS, CORSConfig, RHttpApp}
+import zhttp.service.{EventLoopGroup, Server}
+import zhttp.service.server.ServerChannelFactory
 import zio.{Has, ZIO}
 import zio.logging.log
 
@@ -24,11 +26,27 @@ object HTTPServer {
     routes   = CORS(compiled, corsConfig)
   } yield routes
 
+  def start[R <: Has[_]](port: Int, http: RHttpApp[R]): ZIO[R, Throwable, Nothing] =
+    (Server.port(port) ++ Server.app(http)).make.useForever
+      .provideSomeLayer[R](EventLoopGroup.auto(0) ++ ServerChannelFactory.auto)
+
+  val make = for {
+    config <- ZIO.service[EndpointConfig].toManaged_
+    routes <- routes.toManaged_
+    server <- (Server.port(config.httpPort) ++ Server.app(routes) ++ Server.maxRequestSize(
+      config.httpMaxRequestSize
+    )).make
+  } yield server
+
   def start =
     for {
-      routes   <- routes
-      httpPort <- ZIO.access[Has[EndpointConfig]](_.get.httpPort)
-      _        <- log.info(s"Starting HTTP server at $httpPort port")
-      _        <- Server.start(httpPort, routes)
+      config <- ZIO.service[EndpointConfig]
+      routes <- routes
+      _      <- log.info(s"Starting HTTP server at ${config.httpPort} port")
+      _ <- (Server.simpleLeakDetection ++
+        Server.port(config.httpPort) ++
+        Server.app(routes) ++
+        Server.maxRequestSize(config.httpMaxRequestSize)).make.useForever
+        .provideSomeLayer(EventLoopGroup.auto(0) ++ ServerChannelFactory.auto)
     } yield ()
 }
