@@ -13,7 +13,7 @@ import zio.config.typesafe.TypesafeConfigSource
 case class EndpointConfig(
     httpHost: java.net.URI,
     httpPort: Int,
-    httpMaxRequestSize: Int = 2048,
+    httpMaxRequestSize: Int = 8192,
     grpcPort: Int
 ) {
   lazy val httpUri = {
