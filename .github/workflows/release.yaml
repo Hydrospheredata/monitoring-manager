@@ -9,6 +9,7 @@ jobs:
   Build_Push:
     runs-on: ubuntu-20.04
     env:
+      HYDRO_MONITORING_REPO: ${{ github.repository_owner }}/hydro-monitoring
       IMAGE: monitoring-manager # name of the built image
       REGISTRY: hydrosphere
     
@@ -55,10 +56,29 @@ jobs:
         shell: bash
         run: "sbt docker:publishLocal"
 
-      - name: Retag image
+      - name: Retag image to latest version
         shell: bash
         run: "docker tag ${{ env.IMAGE }}:dev ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest"
 
-      - name: Push image
+      - name: Push latest image
         shell: bash
         run: "docker push ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest"
+
+      - name: Retag image for hydro-monitoring repo
+        shell: bash
+        run: "docker tag ${{ env.IMAGE }}:dev ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }}"
+
+      - name: Push image for hydro-monitoring repo
+        shell: bash
+        run: "docker push ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }}"
+
+      - name: Image digest
+        run: echo ${{ steps.docker_build.outputs.digest }} 
+        
+      - name: Update image version in hydro-monitoring repo
+        uses: aurelien-baudet/workflow-dispatch@v2.1.1
+        with:
+          workflow: Local release
+          token: ${{ secrets.HYDRO_SERVING_TOKEN }}
+          repo: ${{ env.HYDRO_MONITORING_REPO }}
+          inputs: '{"service_image_name":"${{ env.IMAGE }}", "registry_url":"${{ env.REGISTRY }}", "tag":"${{ github.sha }}"}'
