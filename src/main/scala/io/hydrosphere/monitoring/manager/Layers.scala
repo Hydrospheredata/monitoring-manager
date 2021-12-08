@@ -21,7 +21,7 @@ import zio.{Has, Layer, ULayer, ZEnv, ZHub, ZLayer}
   */
 object Layers {
   val logger: ULayer[Has[Logger[String]]] = {
-    val logFormat = "[corr-id=%s] %s"
+    val logFormat = "[corrId=%s] %s"
     Slf4jLogger.make { (context, message) =>
       val correlationId =
         context.get(LogAnnotation.CorrelationId).map(_.toString).getOrElse("N/A")

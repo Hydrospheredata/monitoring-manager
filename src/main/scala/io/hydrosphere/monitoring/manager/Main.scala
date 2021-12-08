@@ -12,7 +12,7 @@ object Main extends zio.App {
       _   <- GRPCServer.start.useForever.forkAs("grpc-server")
       _   <- HTTPServer.start.forkAs("http-server")
       sub <- ZIO.service[InferenceSubscriptionService]
-      _ <- sub.startMonitoring.runDrain.forkAs("s3-monitor") <* log.info(
+      _ <- sub.startMonitoring().forkAs("s3-monitor") <* log.info(
         "S3 object monitoring started"
       )
     } yield ()
