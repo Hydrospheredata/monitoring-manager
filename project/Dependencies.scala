@@ -4,7 +4,7 @@ object Dependencies {
   final val zioVersion        = "1.0.12"
   final val zioAwsVersion     = "3.17.61.1"
   final val zioConfigVersion  = "1.0.10"
-  final val log4jVersion      = "2.14.1"
+  final val log4jVersion      = "2.16.0"
   final val doobieVersion     = "1.0.0-M5"
   final val tapirVersion      = "0.19.0-M7"
   final val quillVersion      = "3.10.0"
