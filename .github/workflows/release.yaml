@@ -5,14 +5,77 @@ on:
     branches: 
       - master
 
+  workflow_dispatch:
+    inputs:
+      bump:
+        description: 'Bump rule'
+        required: false
+        default: prerelease
+        type: choice
+        options:
+        - major
+        - minor
+        - patch
+        - prerelease
+        - premajor
+        - preminor
+        - prepatch
+      version:
+        description: 'Release version (ommit to bump)'
+        required: false
+
+env:
+  HYDRO_MONITORING_REPO: ${{ github.repository_owner }}/hydro-monitoring
+  IMAGE: monitoring-manager # name of the built image
+  REGISTRY: hydrosphere
+
+defaults:
+    run:
+      shell: bash
+
 jobs:
-  Build_Push:
+  version:
+    name: 'Determine release version'
+    runs-on: ubuntu-20.04
+
+    outputs:
+      version: ${{ env.VERSION }}
+
+    steps:
+      - name: Checkout the repository
+        uses: actions/checkout@v2
+
+      - name: Get the latest tag
+        id: get-latest-tag
+        uses: actions-ecosystem/action-get-latest-tag@v1
+        with:
+          semver_only: true
+
+      - uses: actions-ecosystem/action-bump-semver@v1
+        if: env.VERSION == '' && github.event_name == 'workflow_dispatch'
+        id: bump-semver
+        with:
+          current_version: ${{ steps.get-latest-tag.outputs.tag }}
+          level: ${{ github.event.inputs.bump }}
+
+      - name: Set VERSION variable for global release
+        if: env.VERSION == '' && github.event_name == 'workflow_dispatch'
+        run: echo VERSION=${{ steps.bump-semver.outputs.new_version }} >> $GITHUB_ENV
+
+      - name: Force set VERSION variable
+        if: github.event.inputs.version != '' && github.event_name == 'workflow_dispatch'
+        run: echo VERSION=${{ github.event.inputs.version }} >> $GITHUB_ENV
+
+      - name: Set VERSION variable for local release
+        if: github.event_name == 'push'
+        run: echo VERSION=${{ github.sha }} >> $GITHUB_ENV
+
+  build_push:
+    needs: version
     runs-on: ubuntu-20.04
     env:
-      HYDRO_MONITORING_REPO: ${{ github.repository_owner }}/hydro-monitoring
-      IMAGE: monitoring-manager # name of the built image
-      REGISTRY: hydrosphere
-    
+      VERSION: ${{ needs.version.outputs.version }}
+
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v2
@@ -32,7 +95,6 @@ jobs:
 
       - name: Initialize project
         if: steps.restore-cache.outputs.cache-hit != 'true'
-        shell: bash
         run: "sbt initialize"
 
       - name: Set up Docker Buildx
@@ -45,7 +107,6 @@ jobs:
           key: ${{ runner.os }}-buildx-${{ github.sha }}
           restore-keys: |
             ${{ runner.os }}-buildx-
-
       - name: Docker Login
         uses: docker/login-action@v1.10.0
         with:
@@ -53,33 +114,67 @@ jobs:
           password: ${{ secrets.DOCKERHUB_PASSWORD }}       
       
       - name: Build docker image
-        shell: bash
         run: "sbt docker:publishLocal"
 
       - name: Retag image to latest version
-        shell: bash
         run: "docker tag ${{ env.IMAGE }}:dev ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest"
 
       - name: Push latest image
-        shell: bash
         run: "docker push ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest"
 
       - name: Retag image for hydro-monitoring repo
-        shell: bash
-        run: "docker tag ${{ env.IMAGE }}:dev ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }}"
+        run: "docker tag ${{ env.IMAGE }}:dev ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ env.VERSION }}"
 
       - name: Push image for hydro-monitoring repo
-        shell: bash
-        run: "docker push ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ github.sha }}"
+        run: "docker push ${{ env.REGISTRY }}/${{ env.IMAGE }}:${{ env.VERSION }}"
 
       - name: Image digest
         run: echo ${{ steps.docker_build.outputs.digest }} 
-        
-      - name: Update image version in hydro-monitoring repo
-        uses: aurelien-baudet/workflow-dispatch@v2.1.1
+
+  update_image_version:
+    needs: [version, build_push]
+    if: github.event_name == 'push'
+    name: 'Update image version in hydro-monitoring repo'
+    runs-on: ubuntu-20.04
+
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+
+    steps:
+      - uses: aurelien-baudet/workflow-dispatch@v2.1.1
         with:
           workflow: Local release
           ref: main
           token: ${{ secrets.HYDRO_SERVING_TOKEN }}
           repo: ${{ env.HYDRO_MONITORING_REPO }}
-          inputs: '{"service_image_name":"${{ env.IMAGE }}", "registry_url":"${{ env.REGISTRY }}", "tag":"${{ github.sha }}"}'
+          inputs: '{"service_image_name":"${{ env.IMAGE }}", "registry_url":"${{ env.REGISTRY }}", "tag":"${{ env.VERSION }}"}'
+
+  release:
+    if: github.event_name == 'workflow_dispatch'
+    needs: [version, build_push]
+    name: 'Global release'
+    runs-on: ubuntu-20.04
+
+    env:
+      VERSION: ${{ needs.version.outputs.version }}
+
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+
+      - name: Push to repo
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          sudo chown -R "${USER:-$(id -un)}" .
+          git commit -m "Releasing ${{ env.IMAGE }}:${{ env.VERSION }}" -a --allow-empty
+          git push
+
+      - name: Reports
+        run: echo "::set-output name=tag-output::${{ env.VERSION }}"
+
+      - name: Create github release
+        uses: meeDamian/github-release@2.0
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          tag: ${{ env.VERSION }}
