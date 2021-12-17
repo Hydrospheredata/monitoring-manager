@@ -5,7 +5,7 @@ import io.github.vigoo.zioaws._
 import io.hydrosphere.monitoring.manager.api.http._
 import io.hydrosphere.monitoring.manager.db.{DatabaseContext, FlywayClient}
 import io.hydrosphere.monitoring.manager.domain.data._
-import io.hydrosphere.monitoring.manager.domain.metrics.PushGateway
+import io.hydrosphere.monitoring.manager.domain.metrics.sender.PushGateway
 import io.hydrosphere.monitoring.manager.domain.model._
 import io.hydrosphere.monitoring.manager.domain.plugin.{PluginRepository, PluginRepositoryImpl}
 import io.hydrosphere.monitoring.manager.domain.report.{ReportRepository, ReportRepositoryImpl}
@@ -20,14 +20,13 @@ import zio.{Has, Layer, ULayer, ZEnv, ZHub, ZLayer}
   * is to be initialized and executed by zio.App
   */
 object Layers {
-  val logger: ULayer[Has[Logger[String]]] = {
-    val logFormat = "[corrId=%s] %s"
+  val logger: ULayer[Has[Logger[String]]] =
     Slf4jLogger.make { (context, message) =>
-      val correlationId =
-        context.get(LogAnnotation.CorrelationId).map(_.toString).getOrElse("N/A")
-      logFormat.format(correlationId, message)
+      context.get(LogAnnotation.CorrelationId).map(_.toString) match {
+        case Some(corrId) => s"[corrId=$corrId] $message"
+        case None         => message
+      }
     }
-  }
 
   val basicEnv = ZLayer.requires[ZEnv] ++ logger
 

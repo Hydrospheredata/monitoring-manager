@@ -1,6 +1,6 @@
-package io.hydrosphere.monitoring.manager.domain.metrics
+package io.hydrosphere.monitoring.manager.domain.metrics.sender
 
-import io.hydrosphere.monitoring.manager.domain.metrics.PushGateway.{JobName, Password, Username}
+import io.hydrosphere.monitoring.manager.domain.metrics.sender.PushGateway._
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.{
   BasicAuthHttpConnectionFactory,
@@ -8,24 +8,11 @@ import io.prometheus.client.exporter.{
   HttpConnectionFactory,
   PushGateway => PPG
 }
-import zio.logging.{log, Logger, Logging}
-import zio.macros.accessible
-import zio.metrics.prometheus.Registry
 import zio._
 import zio.blocking.Blocking
+import zio.logging._
 
 import java.net.URL
-
-@accessible
-trait PushGateway {
-
-  /** Pushes metrics from given registry to the PushGateway.
-    */
-  def push(registry: CollectorRegistry, jobName: JobName): ZIO[Any, PushError, Unit]
-
-  def pushEnv(jobName: JobName): ZIO[Registry, PushError, Unit] =
-    ZIO.accessM[Registry](_.get.getCurrent()) >>= (push(_, jobName))
-}
 
 object PushGateway {
   type JobName  = String
@@ -41,27 +28,17 @@ object PushGateway {
             (ZIO(value).toLayer ++ ZLayer.identity[Logging] ++ ZLayer.identity[Blocking] >>> PushGatewayImpl.layer)
               .tap(_ => log.info("Using PushGateway"))
           case None =>
-            (ZLayer.identity[Logging] >>> PushGatewayNoopImpl.layer).tap(_ => log.info("No PushGateway integration"))
+            (ZLayer.identity[Logging] >>> SenderNoopImpl.layer).tap(_ => log.info("No PushGateway integration"))
         }
       }
 }
+
 final case class PushError(jobName: JobName, underlying: Throwable)
-    extends Error(s"Can't push $jobName job to the PushGateway", underlying)
-
-/** Noop is used when there is no PG configuration.
-  */
-case class PushGatewayNoopImpl(log: Logger[String]) extends PushGateway {
-  override def push(registry: CollectorRegistry, jobName: JobName): ZIO[Any, PushError, Unit] =
-    log.debug("no-op push").unit
-}
-
-object PushGatewayNoopImpl {
-  val layer = (PushGatewayNoopImpl.apply _).toLayer[PushGateway]
-}
+    extends SendError(s"Can't push $jobName job to the PushGateway", underlying)
 
 final case class PushGatewayImpl(exporter: PPG, logger: Logger[String], blocking: Blocking.Service)
-    extends PushGateway {
-  def push(registry: CollectorRegistry, jobName: JobName): ZIO[Any, PushError, Unit] =
+    extends MetricSender {
+  def push(registry: CollectorRegistry, jobName: JobName) =
     logger.debug(s"Pushing $jobName") *>
       blocking.blocking {
         Task {
@@ -89,7 +66,7 @@ object PushGatewayImpl {
     block  <- ZIO.service[Blocking.Service]
     hcf    <- makeHttpConnFactory(config.creds)
     pg     <- makeUnsafePG(config.url, hcf)
-  } yield PushGatewayImpl(pg, log, block): PushGateway).toLayer
+  } yield PushGatewayImpl(pg, log, block): MetricSender).toLayer
 }
 
 final case class PushGatewayConfig(

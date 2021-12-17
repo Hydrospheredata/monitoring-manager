@@ -1,6 +1,7 @@
 package io.hydrosphere.monitoring.manager.domain.metrics
 
-import io.hydrosphere.monitoring.manager.domain.metrics.PushGateway.JobName
+import io.hydrosphere.monitoring.manager.domain.metrics.sender.{MetricSender, PushGateway}
+import io.hydrosphere.monitoring.manager.domain.metrics.sender.PushGateway.JobName
 import io.prometheus.client.CollectorRegistry
 import zio.logging.{log, Logging}
 import zio.{Has, ZIO, ZLayer}
@@ -16,6 +17,6 @@ object MetricsService {
     (for {
       _ <- log.debug(s"Calculating metrics for $jobName")
       _ <- measurable.measure(m, MetricLabels.empty)
-      _ <- PushGateway.pushEnv(jobName)
-    } yield ()).provideSomeLayer[Has[PushGateway] with Logging](emptyCollector)
+      _ <- MetricSender.pushEnv(jobName)
+    } yield ()).provideSomeLayer[Has[MetricSender] with Logging](emptyCollector)
 }
