@@ -10,16 +10,18 @@ import zio.{system, Has, ZIO, ZLayer}
 import zio.config.magnolia.descriptor
 import zio.config.typesafe.TypesafeConfigSource
 
+import java.net.URL
+
 case class EndpointConfig(
-    httpHost: java.net.URI,
     httpPort: Int,
     httpMaxRequestSize: Int = 8192,
     grpcPort: Int
+)
+
+case class ProxyConfig(
+    externalUrl: URL
 ) {
-  lazy val httpUri = {
-    val parsedUri = sttp.model.Uri(httpHost)
-    URI(parsedUri.port(httpPort))
-  }
+  lazy val managerProxyUri: URI = URI.fromJava(externalUrl.toURI)
 }
 
 object Config {
@@ -35,6 +37,9 @@ object Config {
     descriptor[Option[PushGatewayConfig]].describe("Configures Prometheus Pushgateway access. Optional config.")
   )
 
+  val proxyConfig: ConfigDescriptor[ProxyConfig] =
+    nested("proxy")(descriptor[ProxyConfig].describe("Configures HTTP proxy for registered plugins."))
+
   /** zio-aws has descriptor which looks for fileds without prefix. For this app, root prefix wasn't suitable, so I put
     * it inside `aws` prefix.
     */
@@ -48,12 +53,14 @@ object Config {
     val configs = for {
       src <- sources
       endpoint = endpointDesc.from(src)
+      proxy    = proxyConfig.from(src)
       aws      = awsDesc.from(src)
       pg       = pushgatewayDesc.from(src)
       endpointVal <- ZIO.fromEither(read(endpoint))
       awsVal      <- ZIO.fromEither(read(aws))
       pgVal       <- ZIO.fromEither(read(pg))
-    } yield Has.allOf(endpointVal, awsVal, pgVal)
+      proxyVal    <- ZIO.fromEither(read(proxy))
+    } yield Has.allOf(endpointVal, awsVal, pgVal, proxyVal)
     configs.toLayerMany
   }
 }
