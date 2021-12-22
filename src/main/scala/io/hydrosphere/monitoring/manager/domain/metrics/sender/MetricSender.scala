@@ -1,10 +1,12 @@
 package io.hydrosphere.monitoring.manager.domain.metrics.sender
 
-import PushGateway.JobName
+import io.hydrosphere.monitoring.manager.domain.metrics.sender.MetricSender.JobName
 import io.prometheus.client.CollectorRegistry
 import zio.macros.accessible
 import zio.ZIO
 import zio.metrics.prometheus.Registry
+
+import scala.util.control.NoStackTrace
 
 @accessible
 trait MetricSender {
@@ -14,4 +16,10 @@ trait MetricSender {
     ZIO.accessM[Registry](_.get.getCurrent()) >>= (push(_, jobName))
 }
 
-abstract class SendError(msg: String, cause: Throwable) extends Error(msg, cause)
+abstract class SendError(msg: String, cause: Option[Throwable])
+    extends Error(msg, cause.getOrElse(new Exception with NoStackTrace))
+
+object MetricSender {
+  type JobName = String
+  val layer = SenderNoopImpl.layer
+}

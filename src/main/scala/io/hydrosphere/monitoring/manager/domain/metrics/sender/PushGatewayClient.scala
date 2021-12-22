@@ -1,6 +1,7 @@
 package io.hydrosphere.monitoring.manager.domain.metrics.sender
 
-import io.hydrosphere.monitoring.manager.domain.metrics.sender.PushGateway._
+import io.hydrosphere.monitoring.manager.domain.metrics.sender.MetricSender.JobName
+import io.hydrosphere.monitoring.manager.domain.metrics.sender.PushGatewayImpl.{Password, Username}
 import io.prometheus.client.CollectorRegistry
 import io.prometheus.client.exporter.{
   BasicAuthHttpConnectionFactory,
@@ -14,27 +15,8 @@ import zio.logging._
 
 import java.net.URL
 
-object PushGateway {
-  type JobName  = String
-  type Username = String
-  type Password = String
-
-  val layer =
-    ZLayer
-      .service[Option[PushGatewayConfig]]
-      .flatMap { x =>
-        x.get match {
-          case Some(value) =>
-            (ZIO(value).toLayer ++ ZLayer.identity[Logging] ++ ZLayer.identity[Blocking] >>> PushGatewayImpl.layer)
-              .tap(_ => log.info("Using PushGateway"))
-          case None =>
-            (ZLayer.identity[Logging] >>> SenderNoopImpl.layer).tap(_ => log.info("No PushGateway integration"))
-        }
-      }
-}
-
 final case class PushError(jobName: JobName, underlying: Throwable)
-    extends SendError(s"Can't push $jobName job to the PushGateway", underlying)
+    extends SendError(s"Can't push $jobName job to the PushGateway", Some(underlying))
 
 final case class PushGatewayImpl(exporter: PPG, logger: Logger[String], blocking: Blocking.Service)
     extends MetricSender {
@@ -48,6 +30,22 @@ final case class PushGatewayImpl(exporter: PPG, logger: Logger[String], blocking
 }
 
 object PushGatewayImpl {
+  type Username = String
+  type Password = String
+
+//  val layer =
+//    ZLayer
+//      .service[Option[PushGatewayConfig]]
+//      .flatMap { x =>
+//        x.get match {
+//          case Some(value) =>
+//            (ZIO(value).toLayer ++ ZLayer.identity[Logging] ++ ZLayer.identity[Blocking] >>> PushGatewayImpl.layer)
+//              .tap(_ => log.info("Using PushGateway"))
+//          case None =>
+//            (ZLayer.identity[Logging] >>> SenderNoopImpl.layer).tap(_ => log.info("No PushGateway integration"))
+//        }
+//      }
+
   def makeHttpConnFactory(creds: Option[PushGatewayCreds]): Task[HttpConnectionFactory] = ZIO.effect {
     val basicAuth = creds.map(c => new BasicAuthHttpConnectionFactory(c.username, c.password))
     val default   = new DefaultHttpConnectionFactory()

@@ -4,8 +4,7 @@ import io.github.vigoo.zioaws.core.config.CommonAwsConfig
 import io.github.vigoo.zioaws.core.config.descriptors.commonAwsConfig
 import zio.config._
 import ConfigDescriptor._
-import io.hydrosphere.monitoring.manager.domain.metrics.sender.PushGateway.{Password, Username}
-import io.hydrosphere.monitoring.manager.domain.metrics.sender.PushGatewayConfig
+import io.hydrosphere.monitoring.manager.domain.metrics.sender.PushGatewayImpl.{Password, Username}
 import io.hydrosphere.monitoring.manager.util.URI
 import zio.{system, Chunk, Has, ZIO, ZLayer}
 import zio.config.magnolia.descriptor
@@ -36,11 +35,12 @@ object MetricsConfig {
   final case class PushGatewayConfig(
       url: URL,
       creds: Option[PushGatewayCreds]
-  )                                           extends MetricImpl
-  final case class PrometheusConfig(url: URL) extends MetricImpl
-
+  ) extends MetricImpl
   final case class PushGatewayCreds(username: Username, password: Password)
 
+  final case class PrometheusConfig(url: URL) extends MetricImpl
+
+  final case class OpenTelemetryCollector(url: URL) extends MetricImpl
 }
 
 object Config {

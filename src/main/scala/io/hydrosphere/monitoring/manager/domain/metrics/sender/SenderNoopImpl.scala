@@ -1,6 +1,6 @@
 package io.hydrosphere.monitoring.manager.domain.metrics.sender
 
-import io.hydrosphere.monitoring.manager.domain.metrics.sender.PushGateway.JobName
+import io.hydrosphere.monitoring.manager.domain.metrics.sender.MetricSender.JobName
 import io.prometheus.client.CollectorRegistry
 import zio.ZIO
 import zio.logging.Logger

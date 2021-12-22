@@ -2,7 +2,7 @@ package io.hydrosphere.monitoring.manager.api.grpc
 
 import io.grpc.Status
 import io.hydrosphere.monitoring.manager.domain.data.{DataService, InferenceSubscriptionService}
-import io.hydrosphere.monitoring.manager.domain.metrics.sender.{MetricSender, PushGateway}
+import io.hydrosphere.monitoring.manager.domain.metrics.sender.MetricSender
 import io.hydrosphere.monitoring.manager.domain.report.ReportRepository
 import io.hydrosphere.monitoring.manager.usecases.ProcessPluginAck
 import monitoring_manager.monitoring_manager.ZioMonitoringManager.RDataStorageService
