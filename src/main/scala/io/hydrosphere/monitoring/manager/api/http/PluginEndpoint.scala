@@ -1,18 +1,16 @@
 package io.hydrosphere.monitoring.manager.api.http
 
 import io.hydrosphere.monitoring.manager.domain.plugin._
-import io.hydrosphere.monitoring.manager.EndpointConfig
+import io.hydrosphere.monitoring.manager.{EndpointConfig, ProxyConfig}
 import zio._
 
 case class PluginEndpoint(
     pluginRepo: PluginRepository,
-    endpointConfig: EndpointConfig
+    proxyConfig: ProxyConfig
 ) extends GenericEndpoint {
 
   val pluginAdd = PluginEndpoint.pluginAddDesc
-    .serverLogic[Task](request =>
-      PluginService.register(request).provide(Has(pluginRepo) ++ Has(endpointConfig)).either
-    )
+    .serverLogic[Task](request => PluginService.register(request).provide(Has(pluginRepo) ++ Has(proxyConfig)).either)
 
   val pluginList = PluginEndpoint.pluginListDesc
     .serverLogic[Task](_ =>

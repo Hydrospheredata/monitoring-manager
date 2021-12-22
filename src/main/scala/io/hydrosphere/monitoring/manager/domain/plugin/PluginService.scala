@@ -1,30 +1,28 @@
 package io.hydrosphere.monitoring.manager.domain.plugin
 
 import io.hydrosphere.monitoring.manager.util.URI
-import io.hydrosphere.monitoring.manager.EndpointConfig
+import io.hydrosphere.monitoring.manager.{EndpointConfig, ProxyConfig}
 import zio.{Has, ZIO}
 
 object PluginService {
-  case class PluginAlreadyExistsError(pluginName: String)
-      extends Error(s"Plugin $pluginName already exists")
+  case class PluginAlreadyExistsError(pluginName: String) extends Error(s"Plugin $pluginName already exists")
 
   case class PluginNotFoundError(pluginName: String) extends Error(s"Can't find plugin $pluginName")
 
   case class PluginIncompleteError(plugin: Plugin, fields: String*)
       extends Error(s"Plugin ${plugin.name} doesn't have [${fields.mkString(",")}] fields")
 
-  /** Create new Plugin instance and add it to the persistence storage. Updates plugin if there is
-    * already one.
+  /** Create new Plugin instance and add it to the persistence storage. Updates plugin if there is already one.
     *
     * @param pluginRequest
     *   @return
     */
   def register(
       plugin: Plugin
-  ): ZIO[Has[PluginRepository] with Has[EndpointConfig], Throwable, Plugin] =
+  ): ZIO[Has[PluginRepository] with Has[ProxyConfig], Throwable, Plugin] =
     for {
-      config <- ZIO.service[EndpointConfig]
-      newPlugin = resolveRemoteEntry(plugin, config.httpUri)
+      config <- ZIO.service[ProxyConfig]
+      newPlugin = resolveRemoteEntry(plugin, config.managerProxyUri)
       exPlugin <- PluginRepository.get(plugin.name)
       result <- exPlugin match {
         case Some(_) =>
