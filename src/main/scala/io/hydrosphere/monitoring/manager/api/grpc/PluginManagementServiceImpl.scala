@@ -4,7 +4,7 @@ import io.grpc.Status
 import io.hydrosphere.monitoring.manager.api.grpc.PluginManagementServiceImpl.requestToPlugin
 import io.hydrosphere.monitoring.manager.domain.plugin._
 import io.hydrosphere.monitoring.manager.util.URI
-import io.hydrosphere.monitoring.manager.EndpointConfig
+import io.hydrosphere.monitoring.manager.{EndpointConfig, ProxyConfig}
 import monitoring_manager.monitoring_manager.{RegisterPluginRequest, RegisterPluginResponse}
 import monitoring_manager.monitoring_manager.ZioMonitoringManager.PluginManagementService
 import zio._
@@ -12,7 +12,7 @@ import zio.logging.Logger
 
 final case class PluginManagementServiceImpl(
     pluginRepository: PluginRepository,
-    endpointConfig: EndpointConfig,
+    proxyConfig: ProxyConfig,
     log: Logger[String]
 ) extends PluginManagementService {
   override def registerPlugin(request: RegisterPluginRequest) =
@@ -24,12 +24,12 @@ final case class PluginManagementServiceImpl(
         .register(plugin)
         .tapError(err => log.throwable("Error during plugin registration", err))
         .mapError(Status.INTERNAL.withCause)
-        .provide(Has(pluginRepository) ++ Has(endpointConfig))
+        .provide(Has(pluginRepository) ++ Has(proxyConfig))
     } yield RegisterPluginResponse()
 }
 
 object PluginManagementServiceImpl {
-  val layer: URLayer[Has[PluginRepository] with Has[EndpointConfig] with Has[Logger[String]], Has[
+  val layer: URLayer[Has[PluginRepository] with Has[ProxyConfig] with Has[Logger[String]], Has[
     PluginManagementService
   ]] =
     (PluginManagementServiceImpl.apply _).toLayer
