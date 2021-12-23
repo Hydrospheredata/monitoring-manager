@@ -4,7 +4,6 @@ import io.github.vigoo.zioaws.core.config.CommonAwsConfig
 import io.github.vigoo.zioaws.core.config.descriptors.commonAwsConfig
 import zio.config._
 import ConfigDescriptor._
-import io.hydrosphere.monitoring.manager.domain.metrics.sender.PushGatewayImpl.{Password, Username}
 import io.hydrosphere.monitoring.manager.util.URI
 import zio.{system, Chunk, Has, ZIO, ZLayer}
 import zio.config.magnolia.descriptor
@@ -25,23 +24,8 @@ case class EndpointConfig(
 }
 
 case class MetricsConfig(
-    impl: MetricsConfig.MetricImpl
+    collectorUri: java.net.URI
 )
-
-object MetricsConfig {
-
-  sealed trait MetricImpl
-
-  final case class PushGatewayConfig(
-      url: URL,
-      creds: Option[PushGatewayCreds]
-  ) extends MetricImpl
-  final case class PushGatewayCreds(username: Username, password: Password)
-
-  final case class PrometheusConfig(url: URL) extends MetricImpl
-
-  final case class OpenTelemetryCollector(url: URL) extends MetricImpl
-}
 
 object Config {
 
@@ -52,8 +36,8 @@ object Config {
   val endpointDesc: ConfigDescriptor[EndpointConfig] =
     nested("endpoint")(descriptor[EndpointConfig])
 
-  val pushgatewayDesc: ConfigDescriptor[Option[MetricsConfig]] = nested("metrics")(
-    descriptor[Option[MetricsConfig]].describe("Configures Prometheus Pushgateway access. Optional config.")
+  val metricDesc: ConfigDescriptor[Option[MetricsConfig]] = nested("metrics")(
+    descriptor[Option[MetricsConfig]].describe("URL to OpenTelemetry collector instance.")
   )
 
   /** zio-aws has descriptor which looks for fileds without prefix. For this app, root prefix wasn't suitable, so I put
@@ -65,14 +49,14 @@ object Config {
     */
   final val databaseConfPrefix = "db"
 
-  final val configs = Chunk(awsDesc, pushgatewayDesc, endpointDesc)
+  final val configs = Chunk(awsDesc, metricDesc, endpointDesc)
 
   val layer = {
     val configs = for {
       src <- sources
       endpoint = endpointDesc.from(src)
       aws      = awsDesc.from(src)
-      pg       = pushgatewayDesc.from(src)
+      pg       = metricDesc.from(src)
       endpointVal <- ZIO.fromEither(read(endpoint))
       awsVal      <- ZIO.fromEither(read(aws))
       pgVal       <- ZIO.fromEither(read(pg))

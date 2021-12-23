@@ -15,7 +15,7 @@ object MkDocs extends zio.App {
       Array(
         generateDocs(Config.awsDesc).toTable.toGithubFlavouredMarkdown,
         generateDocs(Config.endpointDesc).toTable.toGithubFlavouredMarkdown,
-        generateDocs(Config.pushgatewayDesc).toTable.toGithubFlavouredMarkdown
+        generateDocs(Config.metricDesc).toTable.toGithubFlavouredMarkdown
       )
     }
     _ <- Files.writeLines(Path("config.md"), tables)

@@ -1,22 +1,15 @@
 package io.hydrosphere.monitoring.manager.domain.metrics
 
 import io.hydrosphere.monitoring.manager.domain.metrics.sender.MetricSender
-import io.hydrosphere.monitoring.manager.domain.metrics.sender.MetricSender.JobName
-import io.prometheus.client.CollectorRegistry
-import zio.logging.{log, Logging}
-import zio.{Has, ZIO, ZLayer}
-import zio.metrics.prometheus.Registry
+import io.hydrosphere.monitoring.manager.domain.report.Report
+import zio.logging.log
 
 object MetricsService {
-  val emptyCollector: ZLayer[Any, Throwable, Registry] =
-    ZIO.effect(Option(new CollectorRegistry())).toLayer >>> Registry.explicit
-
-  def sendMeasurable[T](jobName: JobName, m: T)(implicit
-      measurable: Measurable[T]
-  ) =
-    (for {
-      _ <- log.debug(s"Calculating metrics for $jobName")
-      _ <- measurable.measure(m, MetricLabels.empty)
-      _ <- MetricSender.pushEnv(jobName)
-    } yield ()).provideSomeLayer[Has[MetricSender] with Logging](emptyCollector)
+  def sendMeasurable[T](report: Report) =
+    for {
+      _       <- log.debug(s"Exporting report metrics for plugin=${report.pluginId} file=${report.file}")
+      metrics <- MeasurableInstances.reportMeasurable(report)
+      _       <- log.trace(s"Sending metrics: $metrics")
+      _       <- MetricSender.push(metrics)
+    } yield ()
 }

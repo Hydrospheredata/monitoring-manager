@@ -1,6 +1,6 @@
 package io.hydrosphere.monitoring.manager.usecases
 
-import io.hydrosphere.monitoring.manager.domain.metrics.{Measurable, MetricsService}
+import io.hydrosphere.monitoring.manager.domain.metrics.MetricsService
 import io.hydrosphere.monitoring.manager.domain.metrics.MeasurableInstances._
 import io.hydrosphere.monitoring.manager.domain.metrics.sender.MetricSender
 import io.hydrosphere.monitoring.manager.domain.report.ReportErrors.InvalidAckReport
@@ -18,7 +18,7 @@ object ProcessPluginAck {
       report <- parseReport(req)
       _      <- ReportRepository.create(report)
       _ <- MetricsService
-        .sendMeasurable(s"${report.pluginId}: ${report.file} ${report.fileModifiedAt}", report)
+        .sendMeasurable(report)
         .tapError(x => log.throwable("Error while sending metrics", x))
         .forkDaemon
     } yield report)

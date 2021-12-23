@@ -63,7 +63,7 @@ object Layers {
     ((logger >>> S3ObjectIndex.layer) ++ s3Client ++ db ++ logger ++ ZLayer
       .requires[Random]) >>> InferenceSubscriptionService.layer
 
-  val pushGateway = Config.layer ++ logger ++ ZLayer.requires[Blocking] >>> MetricSender.layer
+  val pushGateway = Config.layer ++ logger >>> MetricSender.layer
 
   val all =
     Config.layer ++ logger ++ db ++ api ++ modelSub ++ inferenceSub ++ pushGateway

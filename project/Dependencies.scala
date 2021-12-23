@@ -44,23 +44,23 @@ object Dependencies {
   )
 
   final val utils = Seq(
-    "dev.zio"          %% "zio-nio"                % "1.0.0-RC11",
-    "eu.timepit"       %% "refined"                % "0.9.28",
-    "dev.zio"          %% "zio-config"             % zioConfigVersion,
-    "dev.zio"          %% "zio-config-magnolia"    % zioConfigVersion,
-    "dev.zio"          %% "zio-config-refined"     % zioConfigVersion,
-    "dev.zio"          %% "zio-config-typesafe"    % zioConfigVersion,
-    "dev.zio"          %% "zio-logging"            % zioLogVersion,
-    "dev.zio"          %% "zio-logging-slf4j"      % zioLogVersion,
-    "ch.qos.logback"    % "logback-classic"        % "1.2.8",
-    "com.spotify"       % "docker-client"          % "8.16.0" exclude ("ch.qos.logback", "logback-classic"),
-    "com.beachape"     %% "enumeratum"             % enumeratumVersion,
-    "com.beachape"     %% "enumeratum-circe"       % enumeratumVersion,
-    "com.beachape"     %% "enumeratum-quill"       % enumeratumVersion,
-    "dev.optics"       %% "monocle-core"           % monocleVersion,
-    "dev.optics"       %% "monocle-macro"          % monocleVersion,
-    "dev.zio"          %% "zio-metrics-prometheus" % "1.0.13",
-    "org.xerial.snappy" % "snappy-java"            % "1.1.8.4"
+    "dev.zio"       %% "zio-nio"             % "1.0.0-RC11",
+    "eu.timepit"    %% "refined"             % "0.9.28",
+    "dev.zio"       %% "zio-config"          % zioConfigVersion,
+    "dev.zio"       %% "zio-config-magnolia" % zioConfigVersion,
+    "dev.zio"       %% "zio-config-refined"  % zioConfigVersion,
+    "dev.zio"       %% "zio-config-typesafe" % zioConfigVersion,
+    "dev.zio"       %% "zio-logging"         % zioLogVersion,
+    "dev.zio"       %% "zio-logging-slf4j"   % zioLogVersion,
+    "ch.qos.logback" % "logback-classic"     % "1.2.9",
+    "com.spotify"    % "docker-client"       % "8.16.0" exclude ("ch.qos.logback", "logback-classic"),
+    "com.beachape"  %% "enumeratum"          % enumeratumVersion,
+    "com.beachape"  %% "enumeratum-circe"    % enumeratumVersion,
+    "com.beachape"  %% "enumeratum-quill"    % enumeratumVersion,
+    "dev.optics"    %% "monocle-core"        % monocleVersion,
+    "dev.optics"    %% "monocle-macro"       % monocleVersion
+//    "dev.zio"          %% "zio-metrics-prometheus" % "1.0.13",
+//    "org.xerial.snappy" % "snappy-java"            % "1.1.8.4"
   )
 
   final val test = Seq(

@@ -74,21 +74,13 @@
 ## Configuration Details
 
 
-|FieldName         |Format           |Description                                                               |Sources|
-|---               |---              |---                                                                       |---    |
-|[metrics](metrics)|[all-of](metrics)|optional value, Configures Prometheus Pushgateway access. Optional config.|       |
+|FieldName         |Format           |Description|Sources|
+|---               |---              |---        |---    |
+|[metrics](metrics)|[nested](metrics)|           |       |
 
 ### metrics
 
-|FieldName     |Format         |Description      |Sources|
-|---           |---            |---              |---    |
-|url           |primitive      |value of type URL|       |
-|[creds](creds)|[all-of](creds)|optional value   |       |
-
-### creds
-
-|FieldName|Format   |Description         |Sources|
-|---      |---      |---                 |---    |
-|username |primitive|value of type string|       |
-|password |primitive|value of type string|       |
+|FieldName   |Format   |Description                                                                |Sources|
+|---         |---      |---                                                                        |---    |
+|collectorUri|primitive|value of type uri, optional value, URL to OpenTelemetry collector instance.|       |
 
