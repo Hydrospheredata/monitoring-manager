@@ -1,28 +1,34 @@
 # Monitoring Manager
 
+The manager service for monitoring solution.
+Responsible for:
+1. Model registration
+2. Model data discovery (training and inference)
+3. Plugin registration
+4. Plugin reports aggregation
+5. Proxying HTTP requests to plugins
+
 ## Plugin system
 
-1. A Plugin must expose 8088 port
-2. A Plugin must implement `/plugininfo.json` route with the following schema:
-```json
-{
-   "iconUrl": "Icon for Plugin UI",
-   "routePath": "???",
-   "ngModuleName": "???",
-   "remoteEntry": "???",
-   "remoteName": "???",
-   "exposedModule": "???"
-}
-```
+A plugin is a web service that MUST use [GRPC API for plugin management](/src/main/protobuf/monitoring_manager.proto)
 
-## Integration Test environment
+Plugins can expose their own web UI as a module that will be attached to our UI.
+The HTTP requests sent from the web UI are to be proxied by manager.
 
-### Database 
-```shell
-docker run -d -e POSTGRES_PASSWORD=root -e POSTGRES_USER=root -e POSTGRES_DB=monitoring -p 5432:5432 postgres
-```
-### Minio
-```shell
-docker run -d -p 9000:9000 -p 9001:9001 minio/minio server /data --console-address ":9001"
-```
+Lifecycle of a plugin:
+1. (Optional) Internal initialization of a plugin.
+2. (If plugin provides web UI) Start HTTP server.
+3. Call `PluginManagementService.RegisterPlugin` GRPC method with plugin info.
+4. Call `ModelCatalogService.GetModelUpdates` to get endless stream of models to work with.
+5. (Optional) Process training data of models.
+6. Call `DataStorageService.GetInferenceDataUpdates` to get endless stream of inference files of a model.
+7. (Optional) Process inference data of models.
+
+## Documentation
+The documentation is in progress, and you can find everything related to this service in [docs](/docs) folder.
+This project also keeps track of major decisions using ADRs. You can find them in [docs/adr](/docs/adr) folder.
+
+## Build and Test
+`sbt build` - builds docs, jars, and a docker image with this service.
+`sbt testAll` - runs unit and integration tests. Integration tests require docker.
 

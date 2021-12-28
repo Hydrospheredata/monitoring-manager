@@ -1,8 +1,8 @@
 # Integration of Monitoring Manager with Prometheus
 
-* Status: accepted 
+* Status: accepted, superseded by [ADR-5](/docs/adr/5-otlp-integration.md) 
 * Deciders: Konstantin Makarychev, Bulat Lutfullin 
-* Date: 2021-11-19
+* Date: 2021-12-24
 
 Technical Story: description
 

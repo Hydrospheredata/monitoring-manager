@@ -8,7 +8,7 @@ import zio.clock.Clock
 import zio.logging.{LogAnnotation, Logger}
 import zio.random._
 import zio.stream.ZStream
-import zio.{Has, Ref, ZHub, ZIO, ZRef}
+import zio.{Has, Ref, Schedule, ZHub, ZIO, ZRef}
 
 import scala.concurrent.duration._
 import scala.jdk.DurationConverters._
@@ -37,23 +37,23 @@ case class InferenceSubscriptionService(
   def subscribe(pluginId: PluginId) =
     ZStream.fromEffect(hubGetOrSet(pluginId)).flatMap(x => ZStream.fromHub(x))
 
-  def startMonitoring = {
-    for {
-      _ <- ZStream.tick(10.seconds.toJava)
-      corId <- ZStream.fromEffect(rng.nextUUID)
-      (model, obj) <- logger.locallyZStream(LogAnnotation.CorrelationId(Some(corId)))(monitoringStep)
-      _ <- ZStream.fromEffect {
-        val prog = for {
-          _ <- logger.debug("Got the subscription state")
+  def startMonitoring(
+      interval: FiniteDuration = 10.seconds
+  ) = {
+    val iteration =
+      monitoringStep.tap { case (model, obj) =>
+        for {
+          _        <- logger.debug("Got the subscription state")
           stateMap <- hubsState.get
           _ <- ZIO.foreachPar_(stateMap.toSeq) { case (pluginId, hub) =>
             ((hub.publish(model -> obj) *> logger.info(s"Discovered ${obj.fullPath} for $pluginId"))
               .whenM(shouldSend(pluginId, obj)))
           }
         } yield ()
-        logger.locally(LogAnnotation.CorrelationId(Some(corId)))(prog)
-      }
-    } yield ()
+      }.runDrain
+    rng.nextUUID
+      .flatMap(id => logger.locally(LogAnnotation.CorrelationId(Some(id)))(iteration))
+      .schedule(Schedule.spaced(interval.toJava))
   }
 
   def shouldSend(

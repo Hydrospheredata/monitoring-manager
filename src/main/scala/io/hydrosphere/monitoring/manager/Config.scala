@@ -4,9 +4,8 @@ import io.github.vigoo.zioaws.core.config.CommonAwsConfig
 import io.github.vigoo.zioaws.core.config.descriptors.commonAwsConfig
 import zio.config._
 import ConfigDescriptor._
-import io.hydrosphere.monitoring.manager.domain.metrics.PushGatewayConfig
 import io.hydrosphere.monitoring.manager.util.URI
-import zio.{system, Has, ZIO, ZLayer}
+import zio.{system, Chunk, Has, ZIO, ZLayer}
 import zio.config.magnolia.descriptor
 import zio.config.typesafe.TypesafeConfigSource
 
@@ -24,6 +23,10 @@ case class ProxyConfig(
   lazy val managerProxyUri: URI = URI.fromJava(externalUrl.toURI)
 }
 
+case class MetricsConfig(
+    collectorUri: java.net.URI
+)
+
 object Config {
 
   /** Defines where to read configs. Reads from application.conf file and falls back into env variables
@@ -33,8 +36,8 @@ object Config {
   val endpointDesc: ConfigDescriptor[EndpointConfig] =
     nested("endpoint")(descriptor[EndpointConfig])
 
-  val pushgatewayDesc: ConfigDescriptor[Option[PushGatewayConfig]] = nested("pushgateway")(
-    descriptor[Option[PushGatewayConfig]].describe("Configures Prometheus Pushgateway access. Optional config.")
+  val metricDesc: ConfigDescriptor[Option[MetricsConfig]] = nested("metrics")(
+    descriptor[Option[MetricsConfig]].describe("URL to OpenTelemetry collector instance.")
   )
 
   val proxyConfig: ConfigDescriptor[ProxyConfig] =
@@ -49,13 +52,15 @@ object Config {
     */
   final val databaseConfPrefix = "db"
 
+  final val configs = Chunk(awsDesc, metricDesc, endpointDesc)
+
   val layer = {
     val configs = for {
       src <- sources
       endpoint = endpointDesc.from(src)
       proxy    = proxyConfig.from(src)
       aws      = awsDesc.from(src)
-      pg       = pushgatewayDesc.from(src)
+      pg       = metricDesc.from(src)
       endpointVal <- ZIO.fromEither(read(endpoint))
       awsVal      <- ZIO.fromEither(read(aws))
       pgVal       <- ZIO.fromEither(read(pg))

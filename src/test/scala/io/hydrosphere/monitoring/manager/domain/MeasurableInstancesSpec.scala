@@ -5,7 +5,6 @@ import io.hydrosphere.monitoring.manager.domain.metrics.{MeasurableInstances, Me
 import io.hydrosphere.monitoring.manager.domain.report.Report
 import io.hydrosphere.monitoring.manager.domain.report.Report.BatchStats
 import io.hydrosphere.monitoring.manager.util.URI.Context
-import zio.metrics.prometheus.Registry
 import zio.test.{assertM, Assertion}
 
 import java.time.Instant
@@ -28,8 +27,8 @@ object MeasurableInstancesSpec extends GenericUnitTest {
 
   val spec = suite("Measurable[Report]") {
     testM("should convert to metrics") {
-      val result = MeasurableInstances.reportMeasurable.measure(report, MetricLabels.empty)
+      val result = MeasurableInstances.reportMeasurable(report)
       assertM(result)(Assertion.anything)
     }
-  }.provideLayer(Registry.live)
+  }
 }
