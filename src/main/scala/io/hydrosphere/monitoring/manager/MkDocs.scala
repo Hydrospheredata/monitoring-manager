@@ -18,7 +18,7 @@ object MkDocs extends zio.App {
         generateDocs(Config.metricDesc).toTable.toGithubFlavouredMarkdown
       )
     }
-    _ <- Files.writeLines(Path("config.md"), tables)
+    _ <- Files.writeLines(Path("docs/config.md"), tables)
   } yield ()
 
   def generateOpenApi() = ZIO.effect {
@@ -31,7 +31,7 @@ object MkDocs extends zio.App {
   def mkOpenApi() = for {
     openApi <- generateOpenApi()
     yamlStr = openApi.toYaml
-    path    = Path("openapi.yaml")
+    path    = Path("docs/openapi.yaml")
     _ <- Files.writeLines(path, Array(yamlStr))
     _ <- putStrLn(s"Wrote OpenAPI docs to $path")
   } yield ()

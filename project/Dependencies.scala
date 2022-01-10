@@ -18,7 +18,8 @@ object Dependencies {
     "com.softwaremill.sttp.tapir" %% "tapir-zio-http"           % tapirVersion,
     "com.softwaremill.sttp.tapir" %% "tapir-json-circe"         % tapirVersion,
     "com.softwaremill.sttp.tapir" %% "tapir-openapi-docs"       % tapirVersion,
-    "com.softwaremill.sttp.tapir" %% "tapir-openapi-circe-yaml" % tapirVersion
+    "com.softwaremill.sttp.tapir" %% "tapir-openapi-circe-yaml" % tapirVersion,
+    "com.softwaremill.sttp.tapir" %% "tapir-enumeratum"         % tapirVersion
   )
 
   final val http = Seq(
