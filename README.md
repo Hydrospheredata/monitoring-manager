@@ -25,10 +25,10 @@ Lifecycle of a plugin:
 7. (Optional) Process inference data of models.
 
 ## Documentation
-The documentation is in progress, and you can find everything related to this service in [docs](/docs) folder.
+The documentation is in progress, and you can find everything related to this service in [docs](/docs) folder.  
 This project also keeps track of major decisions using ADRs. You can find them in [docs/adr](/docs/adr) folder.
 
 ## Build and Test
-`sbt build` - builds docs, jars, and a docker image with this service.
+`sbt build` - builds docs, jars, and a docker image with this service.  
 `sbt testAll` - runs unit and integration tests. Integration tests require docker.
 
