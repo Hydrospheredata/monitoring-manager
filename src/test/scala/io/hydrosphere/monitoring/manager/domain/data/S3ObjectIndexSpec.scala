@@ -5,17 +5,18 @@ import io.hydrosphere.monitoring.manager.domain.data.S3ObjectIndex.IndexKey
 import io.hydrosphere.monitoring.manager.util.URI.Context
 import io.hydrosphere.monitoring.manager.util.ZDeadline
 import zio.test.environment.TestClock
-import zio.test.{assertM, Assertion}
-import zio.{clock, Has, ZIO, ZRef}
+import zio.test.{assertM, Assertion, ZTestEnv}
+import zio.{clock, Has, ZIO, ZLayer, ZRef}
+import zio.clock.Clock
 
 import java.time.Instant
 import scala.concurrent.duration._
 import scala.jdk.DurationConverters._
 
 object S3ObjectIndexSpec extends GenericUnitTest {
-  val instantL = clock.instant.toLayer
-  val data     = instantL.map(i => Has(IndexKey("plugin-1", uri"s3://test/obj", i.get)))
-  val index = data.flatMap { s =>
+  val instant                                   = Instant.now()
+  val data: ZLayer[Any, Nothing, Has[IndexKey]] = ZIO.effectTotal(IndexKey("plugin-1", uri"s3://test/obj")).toLayer
+  val index: ZLayer[Clock, Nothing, Has[S3ObjectIndex]] = data.flatMap { s =>
     (for {
       deadline <- ZDeadline.now
       state    <- ZRef.make(Map(s.get -> (deadline + 5.minutes)))
@@ -26,7 +27,7 @@ object S3ObjectIndexSpec extends GenericUnitTest {
     testM("should identify seen objects") {
       val p = for {
         key <- ZIO.service[IndexKey]
-        res <- S3ObjectIndex.isNew(key.pluginId, S3Ref(key.s3Uri, key.s3ModifiedAt))
+        res <- S3ObjectIndex.isNew(key.pluginId, S3Ref(key.s3Uri, instant))
       } yield res
       assertM(p)(Assertion.isFalse)
     },
@@ -39,7 +40,7 @@ object S3ObjectIndexSpec extends GenericUnitTest {
       val p = for {
         _   <- TestClock.adjust(6.minutes.toJava)
         key <- ZIO.service[IndexKey]
-        res <- S3ObjectIndex.isNew(key.pluginId, S3Ref(key.s3Uri, key.s3ModifiedAt))
+        res <- S3ObjectIndex.isNew(key.pluginId, S3Ref(key.s3Uri, instant))
       } yield res
       assertM(p)(Assertion.isTrue)
     }

@@ -18,8 +18,7 @@ trait S3ObjectIndex {
 object S3ObjectIndex {
   case class IndexKey(
       pluginId: PluginId,
-      s3Uri: URI,
-      s3ModifiedAt: Instant
+      s3Uri: URI
   )
 
   def make(): ZIO[Any, Nothing, S3ObjectIndex] = for {
@@ -32,7 +31,7 @@ object S3ObjectIndex {
 case class S3ObjectIndexImpl(state: Ref[Map[IndexKey, ZDeadline]], deadlineAfter: FiniteDuration = 1.minute)
     extends S3ObjectIndex {
   def isNew(pluginId: PluginId, obj: S3Ref): ZIO[Clock, Throwable, Boolean] = {
-    val key         = IndexKey(pluginId, obj.fullPath, obj.lastModified)
+    val key         = IndexKey(pluginId, obj.fullPath)
     val getDeadline = state.get.map(s => s.get(key))
     getDeadline.flatMap {
       case Some(deadline) =>

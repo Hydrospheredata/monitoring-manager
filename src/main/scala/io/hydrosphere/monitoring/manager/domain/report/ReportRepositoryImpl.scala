@@ -60,8 +60,7 @@ case class ReportRepositoryImpl(
       query[Report]
         .filter(a =>
           a.pluginId == lift(pluginId) &&
-            a.file == lift(s3Ref.fullPath) &&
-            a.fileModifiedAt == lift(s3Ref.lastModified)
+            a.file == lift(s3Ref.fullPath)
         )
     )
     .map(_.nonEmpty)
