@@ -254,6 +254,38 @@ components:
           type: string
         isGood:
           type: boolean
+    DataProfileType:
+      type: string
+      enum:
+      - NONE
+      - CATEGORICAL
+      - NOMINAL
+      - ORDINAL
+      - NUMERICAL
+      - CONTINUOUS
+      - INTERVAL
+      - RATIO
+      - IMAGE
+      - VIDEO
+      - AUDIO
+      - TEXT
+    DataType:
+      type: string
+      enum:
+      - DT_FLOAT
+      - DT_DOUBLE
+      - DT_INT32
+      - DT_UINT8
+      - DT_INT16
+      - DT_INT8
+      - DT_STRING
+      - DT_INT64
+      - DT_BOOL
+      - DT_UINT16
+      - DT_HALF
+      - DT_UINT32
+      - DT_UINT64
+      - DT_ANY
     Field:
       required:
       - name
@@ -269,9 +301,9 @@ components:
             type: integer
             format: int64
         dtype:
-          type: string
+          $ref: '#/components/schemas/DataType'
         profile:
-          type: string
+          $ref: '#/components/schemas/DataProfileType'
     Map_Seq_ByFeature:
       type: object
       additionalProperties:

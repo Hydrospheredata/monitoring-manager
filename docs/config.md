@@ -65,10 +65,9 @@
 
 |FieldName         |Format   |Description                           |Sources|
 |---               |---      |---                                   |---    |
-|httpHost          |primitive|value of type uri                     |       |
+|httpPort          |primitive|value of type int                     |       |
 |grpcPort          |primitive|value of type int                     |       |
 |httpMaxRequestSize|primitive|value of type int, default value: 8192|       |
-|httpPort          |primitive|value of type int                     |       |
 
 
 ## Configuration Details
