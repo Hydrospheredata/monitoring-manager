@@ -13,7 +13,7 @@ import java.net.URL
 
 case class EndpointConfig(
     httpPort: Int,
-    httpMaxRequestSize: Int = 8192,
+    httpMaxRequestSize: Int = 1024 * 1024, // 1Mb
     grpcPort: Int
 )
 
