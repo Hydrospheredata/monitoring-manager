@@ -63,11 +63,11 @@
 
 ### endpoint
 
-|FieldName         |Format   |Description                           |Sources|
-|---               |---      |---                                   |---    |
-|httpPort          |primitive|value of type int                     |       |
-|grpcPort          |primitive|value of type int                     |       |
-|httpMaxRequestSize|primitive|value of type int, default value: 8192|       |
+|FieldName         |Format   |Description                              |Sources|
+|---               |---      |---                                      |---    |
+|httpPort          |primitive|value of type int                        |       |
+|grpcPort          |primitive|value of type int                        |       |
+|httpMaxRequestSize|primitive|value of type int, default value: 1048576|       |
 
 
 ## Configuration Details
