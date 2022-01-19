@@ -39,7 +39,7 @@ jobs:
         run: "sbt it:test"
 
   Build_image:
-    name: Build image and Generate docs
+    name: "Build Image"
     runs-on: ubuntu-20.04
     env:
       IMAGE: monitoring-manager # name of the built image
@@ -77,15 +77,46 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-       
       
-      - name: Build docker image & generate docs
-        run: "sbt build"
+      - name: Build docker image
+        run: "sbt docker:publishLocal"
 
       - name: Retag image
         run: "docker tag ${{ env.IMAGE }}:dev ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest"
 
-      - name: Push generated docs
-        run: |
-          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git config --local user.name "github-actions[bot]"
-          git commit -m "docs: update openapi.yaml and config.md" -a
-          git push
+  Docs:
+    name: "Generate Docs"
+    runs-on: ubuntu-20.04
+    env:
+      IMAGE: monitoring-manager # name of the built image
+      REGISTRY: hydrosphere
+    
+    steps:
+      - name: Checkout Repo
+        uses: actions/checkout@v2
+        with:
+          ref: ${{ github.event.pull_request.head.ref }}
+
+      - name: Setup scala
+        uses: olafurpg/setup-scala@v11
+        with:
+          java-version: adopt@1.11
+      
+      - name: Restore cache
+        uses: actions/cache@v2.1.6
+        with:
+          path: |
+            ~/.ivy2/cache
+            ~/.sbt
+          key: ${{ runner.os }}-sbt-${{ hashFiles('**/build.sbt', '**/Dependencies.scala') }}
+
+      - name: Initialize project
+        if: steps.restore-cache.outputs.cache-hit != 'true'
+        run: "sbt initialize"
+
+      - name: Generate Docs
+        run: "sbt openapi"
+
+      - name: Commit Format Changes
+        uses: stefanzweifel/git-auto-commit-action@v4
+        with:
+          commit_message: "docs: update openapi.yaml and config.md"
