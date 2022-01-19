@@ -3,12 +3,16 @@ name: Scala CI
 on:
   pull_request:
 
+defaults:
+  run:
+    shell: bash
+
 jobs:
   Test:
     runs-on: ubuntu-20.04
 
     steps:
-      - name: Checkout Repo
+      - name: Checkout the repository
         uses: actions/checkout@v2
       
       - name: Setup scala
@@ -26,18 +30,16 @@ jobs:
 
       - name: Initialize project
         if: steps.restore-cache.outputs.cache-hit != 'true'
-        shell: bash
         run: "sbt initialize"
     
       - name: Run unit tests
-        shell: bash
         run: "sbt test"
 
       - name: Run integration tests
-        shell: bash
         run: "sbt it:test"
 
   Build_image:
+    name: Build image and Generate docs
     runs-on: ubuntu-20.04
     env:
       IMAGE: monitoring-manager # name of the built image
@@ -62,7 +64,6 @@ jobs:
 
       - name: Initialize project
         if: steps.restore-cache.outputs.cache-hit != 'true'
-        shell: bash
         run: "sbt initialize"
 
       - name: Set up Docker Buildx
@@ -76,10 +77,15 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-buildx-       
       
-      - name: Build docker image
-        shell: bash
-        run: "sbt docker:publishLocal"
+      - name: Build docker image & generate docs
+        run: "sbt build"
 
       - name: Retag image
-        shell: bash
         run: "docker tag ${{ env.IMAGE }}:dev ${{ env.REGISTRY }}/${{ env.IMAGE }}:latest"
+
+      - name: Push generated docs
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git commit -m "docs: update openapi.yaml and config.md" -a
+          git push
