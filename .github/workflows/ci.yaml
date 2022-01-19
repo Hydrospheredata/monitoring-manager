@@ -116,7 +116,7 @@ jobs:
       - name: Generate Docs
         run: "sbt openapi"
 
-      - name: Commit Format Changes
+      - name: Commit Docs Changes
         uses: stefanzweifel/git-auto-commit-action@v4
         with:
           commit_message: "docs: update openapi.yaml and config.md"
